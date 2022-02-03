@@ -105,11 +105,27 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 		const vertical_checkpoint_x = exit_vertical_side=="left" ? c.x + c.r : c.x - c.r;
 		const vertical_checkpoint_y = c.y;
 
-		
+		// TODO
+
+		// find how far vertical_checkpoint_x is away from vertical_x (abs?)
+		// calculate y value for lines starting at (vertical_x, horizontal_y) and (vertical_x, other_y)
+		// see if vertical_checkpoint_y is in between the values
+		// if it is you can be done pretty easily
+
+		// if not, do the same for horizontal
+		// but flip x and y
+
+		// if it still isn't inside, it in the corner
+		// you need to know if lines intersect circles
+		// there are three possible corners, try (vertial_x, horizontal_y) first
+		// then (vertical_x, other_y) and (other_x, horizontal_y)
+
+		// the point of intersection is the last point that will be in the rectangle
+		// the distance from the corner to that point is the distance
 
 
-
-
+		// I think returning the side as either "top", "bottom", "left", "right", or "corner"
+		// is the way to go
 
 	}
 
