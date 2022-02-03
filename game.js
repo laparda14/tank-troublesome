@@ -267,6 +267,10 @@ Game.prototype._maze_bullet_collision = function (bullet){
 
 Game.prototype._handle_bullet_collision_rect = function (bullet, col){
 
+	// TODO
+	// if it is a corner, take into account the direction and the rectangle orientation?
+	// there is no side orientation any more perhaps
+
 	if (col.side_orientation == "horizontal"){
 		bullet.dir.y *= -1;
 	} else {
