@@ -3,7 +3,7 @@ function Game(){
 	this.bullets = [];
 }
 
-Game.prototype.update = function(dt){
+Game.prototype.update = function(){
 	// decrement life on all bullets
 	this.bullets.map(b=>b.life--);
 
@@ -11,7 +11,7 @@ Game.prototype.update = function(dt){
 	this.bullets = this.bullets.filter(b=>b.life>0);
 
 	// move bullets
-	this.bullets.map(b=>b.update_pos(dt));
+	this.bullets.map(b=>b.update_pos(1));
 
 	// handle bullet collisions with maze
 	this.bullets.map(b=>this._handle_maze_bullet_collisions(b));
@@ -20,26 +20,33 @@ Game.prototype.update = function(dt){
 };
 
 Game.prototype.draw = function(){
-	// draw the maze
-	this.maze.draw();
 
-	// show bullet paths
 	/*
+	// show bullet paths	
 	for (let j=0; j<this.bullets.length; j++){
 		const special = this.bullets[j];
-		const copy = new Bullet(Object.assign({}, special.pos), special.r, special.life);
+		const copy = new Bullet;
+		copy.pos = Object.assign({}, special.pos);
 		copy.dir = Object.assign({}, special.dir);
-		for (let i=0; i<copy.life+10; i++){
+		copy.speed = special.speed;
+		copy.r = special.r;
+		copy.life = special.life;
+		for (let i=0; i<10 + special.life; i++){
 			copy.update_pos(1);
-			this._maze_bullet_collision(copy);
-			if (i%10==0){
-				fill(255,0,0,50*(copy.life+10 - i)/(copy.life+10));
+			copy.life -= 1;
+			this._handle_maze_bullet_collisions(copy);
+			if (i%20==0){
+				fill(255,0,0,255*(copy.life + 10 - i)/(copy.life + 10));
 				noStroke();
 				ellipse(copy.pos.x, copy.pos.y, copy.r*10, copy.r*10);
 			}
 		}
 	}
 	*/
+
+	// draw the maze
+	this.maze.draw();
+	
 
 	// draw the bullets
 	this.bullets.map(b=>b.draw());

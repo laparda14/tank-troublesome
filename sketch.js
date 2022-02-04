@@ -43,7 +43,7 @@ function draw(){
 	}
 	
 	if (!debug){
-		game.update(1);
+		game.update();
 	}
 	game.draw();
 
