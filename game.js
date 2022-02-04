@@ -65,8 +65,8 @@ Bullet.prototype.update_pos = function (dt){
 Bullet.prototype.draw = function (){
 	noStroke();
 	fill(0);
-	if (this.life < 10){
-		fill(230 - 230*this.life/10)
+	if (this.life < 20){
+		fill(230 - 230*this.life/20)
 	}
 	ellipse(this.pos.x, this.pos.y, this.r*2, this.r*2);
 };
@@ -98,12 +98,12 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	const center = {x:r.x+r.width/2, y:r.y+r.height/2};
 	const x_center_dist = abs(c.x - center.x);
 	const y_center_dist = abs(c.y - center.y);
-	if (x_center_dist > c.r + r.width/2 || y_center_dist > c.r + r.height/2){
+	if (x_center_dist >= c.r + r.width/2 || y_center_dist >= c.r + r.height/2){
 		col.collision = false;
-	}  else if (x_center_dist <= r.width/2 || y_center_dist <= r.height/2) {
+	}  else if (x_center_dist < r.width/2 || y_center_dist < r.height/2) {
 		col.collision = true;
 	} else {
-		col.collision = (x_center_dist-r.width/2)*(x_center_dist-r.width/2) + (y_center_dist-r.height/2)*(y_center_dist-r.height/2) <= c.r*c.r;
+		col.collision = (x_center_dist-r.width/2)*(x_center_dist-r.width/2) + (y_center_dist-r.height/2)*(y_center_dist-r.height/2) < c.r*c.r;
 	}
 
 	if (!col.collision){
@@ -124,8 +124,6 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	// check if it exits the vertical side
 	const vertical_checkpoint_x = exit_vertical_side=="left" ? c.x + c.r : c.x - c.r;
 	const vertical_checkpoint_y = c.y;
-
-	// TODO
 
 	// find how far vertical_checkpoint_x is away from vertical_x (abs?)
 	const vertical_checkpoint_x_dist = vertical_checkpoint_x - vertical_x;
@@ -199,7 +197,7 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 // collision information with moving circle and a circle
 Game.prototype._circle_circle_collision = function (c1, c2, dir){
 	const sq_dist = (c1.x-c2.x)*(c1.x-c2.x) + (c1.y-c2.y)*(c1.y-c2.y);
-	const col = {collision:sq_dist <= (c1.r + c2.r)*(c1.r + c2.r)};
+	const col = {collision:sq_dist < (c1.r + c2.r)*(c1.r + c2.r)};
 	col.type = "moving circle - circle";
 	if (col.collision){
 		const dist_center_x = c1.x - c2.x;
@@ -340,7 +338,7 @@ Game.prototype._find_maze_bullet_collisions = function (bullet){
 
 	}
 
-	collisions.sort((x,y)=>x.dist>y.dist);
+	collisions.sort((x,y)=>x.dist-y.dist);
 	
 	return collisions;
 

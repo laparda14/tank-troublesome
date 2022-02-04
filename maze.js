@@ -14,7 +14,6 @@ function Maze(){
 	// the game is a square of size width x width
 	this.section_size = WIDTH/this.size;
 
-	// this needs to be even
 	this.wall_width = 6;
 
 	// set up cells

@@ -5,6 +5,7 @@ let game;
 let x = 100;
 let y = 100;
 let angle = 0;
+let debug = false;
 
 function mouseCoords(){
 	return {x:mouseX*WIDTH/width-game.maze.wall_width/2, y:mouseY*HEIGHT/height-game.maze.wall_width/2}
@@ -20,7 +21,7 @@ function setup(){
 	frameRate(60);
 
 	game = new Game();
-	canvas.style("border", game.maze.wall_width/2*width/WIDTH + "px solid black");
+	canvas.style("border", floor(game.maze.wall_width/2*width/WIDTH) + "px solid black");
 }
 
 function draw(){
@@ -41,7 +42,9 @@ function draw(){
 		y -= 2*sin(angle);
 	}
 	
-	game.update(1);
+	if (!debug){
+		game.update(1);
+	}
 	game.draw();
 
 	fill(0,0,255);
@@ -58,5 +61,7 @@ function draw(){
 function keyPressed(){
 	if (key == "m"){
 		game.bullets.push(new Bullet({x:x + cos(angle)*25, y:y + sin(angle)*25}, angle, 4));
+	} if (key == "c"){
+		game.bullets = [];
 	}
 }
