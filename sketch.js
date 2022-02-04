@@ -1,79 +1,62 @@
-let WIDTH, HEIGHT, MOUSE_OFFSET;
+let WIDTH, HEIGHT;
 
 let game;
-debug = false;
-info = {};
-angle = 3.14;
 
-function draw_debug(info){
-	noStroke();
-	background(255);
-	fill(50,50,50,90);
-	rect(info.rect_shape.x, info.rect_shape.y, info.rect_shape.width, info.rect_shape.height);
-	fill(90,90,90,90);
-	ellipse(info.circle1_shape.x, info.circle1_shape.y, info.circle1_shape.r*2, info.circle1_shape.r*2);
-	ellipse(info.circle2_shape.x, info.circle2_shape.y, info.circle2_shape.r*2, info.circle2_shape.r*2);
-	fill(255,0,0,90);
-	ellipse(info.bullet.pos.x, info.bullet.pos.y, info.bullet.r*2, info.bullet.r*2);
+let x = 100;
+let y = 100;
+let angle = 0;
+
+function mouseCoords(){
+	return {x:mouseX*WIDTH/width-game.maze.wall_width/2, y:mouseY*HEIGHT/height-game.maze.wall_width/2}
 }
-
 
 function setup(){
 	const canvas = createCanvas(windowHeight*0.9,windowHeight*0.9);
 	canvas.parent("sketch");
 
-	WIDTH = width;
-	HEIGHT = height;
+	WIDTH = 900;
+	HEIGHT = 900;
 
-	frameRate(30);
+	frameRate(60);
 
 	game = new Game();
-	canvas.style("border", game.maze.wall_width/2 + "px solid black");
-	MOUSE_OFFSET = game.maze.wall_width/2;
+	canvas.style("border", game.maze.wall_width/2*width/WIDTH + "px solid black");
 }
 
 function draw(){
-	//scale(width/WIDTH);
+	scale(width/WIDTH);
 	background(230);
-	
-	c = {x:mouseX-MOUSE_OFFSET, y:mouseY-MOUSE_OFFSET, r:30};
-	r = {x:50, y:100, width:300, height:200};
-	dir = {x:cos(angle),y:sin(angle)};
-	collision = game._circle_rectangle_collision(c,r,dir);
-	if (frameCount % 20 == 0){
-		console.log(collision);
+
+	// moving controls, can be held
+	if (keyIsDown(LEFT_ARROW)){
+		angle -= 0.08;
+	} else if (keyIsDown(RIGHT_ARROW)){
+		angle += 0.08;
 	}
+	if (keyIsDown(UP_ARROW)){
+		x += 3*cos(angle);
+		y += 3*sin(angle);
+	} else if (keyIsDown(DOWN_ARROW)){
+		x -= 2*cos(angle);
+		y -= 2*sin(angle);
+	}
+	
+	game.update(1);
+	game.draw();
+
+	fill(0,0,255);
 	noStroke();
-	fill(255,0,0,90);
-	ellipse(c.x, c.y, c.r*2, c.r*2);
-	fill(255,0,0,50);
-	ellipse(c.x + dir.x*collision.dist, c.y + dir.y*collision.dist, c.r*2, c.r*2);
-	fill(0,255,0,90);
-	rect(r.x, r.y, r.width, r.height);
+	ellipse(x,y,50);
 	
-	strokeWeight(2);
+	strokeWeight(5);
 	stroke(0);
-	line(c.x,c.y,c.x+dir.x*100,c.y+dir.y*100);
-	
-
-	
-/*
-		game.draw(); // this is moved here for now so I can debug collisions easier
-		//game.update(1);
-	//game.draw();*/
-
+	line(x,y,x+30*cos(angle),y+30*sin(angle));
 
 }
 
-
+// can't be held
 function keyPressed(){
-	console.log(angle);
-	angle += 0.1;
-	if (key=="u"){
-		game.update(1);
-	} else if (key=="b"){
-		game.bullets.push(new Bullet({x:mouseX-MOUSE_OFFSET, y:mouseY-MOUSE_OFFSET}));
-	} else if (key=="c"){
-		game.bullets = [];
+	if (key == "m"){
+		game.bullets.push(new Bullet({x:x + cos(angle)*25, y:y + sin(angle)*25}, angle, 4));
 	}
 }

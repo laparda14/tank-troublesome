@@ -15,7 +15,7 @@ function Maze(){
 	this.section_size = WIDTH/this.size;
 
 	// this needs to be even
-	this.wall_width = 20;
+	this.wall_width = 6;
 
 	// set up cells
 	this.cells = [];
@@ -100,7 +100,7 @@ Maze.prototype.get_same_wall = function (row, col, dir){
 // draw the maze
 Maze.prototype.draw = function (){
 	strokeWeight(this.wall_width);
-	stroke(80,80,80,90);
+	stroke(80,80,80);
 
 	for (let row=0; row<this.size; row++){
 		for (let col=0; col<this.size; col++){

@@ -14,7 +14,7 @@ Game.prototype.update = function(dt){
 	this.bullets.map(b=>b.update_pos(dt));
 
 	// handle bullet collisions with maze
-	this.bullets.map(b=>this._maze_bullet_collision(b));
+	this.bullets.map(b=>this._handle_maze_bullet_collisions(b));
 
 
 };
@@ -46,13 +46,12 @@ Game.prototype.draw = function(){
 };
 
 
-function Bullet(pos, r=4, life=500){
+function Bullet(pos, angle, speed, r=6, life=1800){
 	this.pos = pos;
 
-	const angle = random()*2*PI*0 + PI/4;
 	this.dir = {x:cos(angle), y:sin(angle)};
 
-	this.speed = 4;
+	this.speed = speed;
 
 	this.r = r;
 	this.life = life;
@@ -75,6 +74,22 @@ Bullet.prototype.draw = function (){
 /*
 Generic collision checks
 */
+
+Game.prototype._line_circle_intersect = function (x_0, y_0, dir, circle){
+	const d_x = x_0 - circle.x;
+	const d_y = y_0 - circle.y;
+	
+	const b = dir.x*d_x + dir.y*d_y;
+	const c = d_x*d_x + d_y*d_y - circle.r*circle.r;
+	
+	const disc = b*b - c;
+	if (disc < 0){
+		return [];
+	}
+	
+	const sqrt_disc = sqrt(disc);
+	return [-b - sqrt_disc, -b + sqrt_disc];
+}
 
 // collision information with a moving circle and (non-rotated) rectangle
 Game.prototype._circle_rectangle_collision = function (c, r, dir){
@@ -109,8 +124,6 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	// check if it exits the vertical side
 	const vertical_checkpoint_x = exit_vertical_side=="left" ? c.x + c.r : c.x - c.r;
 	const vertical_checkpoint_y = c.y;
-	fill(0);
-	ellipse(vertical_checkpoint_x, vertical_checkpoint_y, 10,10);
 
 	// TODO
 
@@ -120,8 +133,6 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	// calculate y value for lines starting at (vertical_x, horizontal_y) and (vertical_x, other_y)
 	const y_shared_line = dir.y*vertical_checkpoint_x_dist/dir.x + horizontal_y;
 	const y_vertical_check_line = dir.y*vertical_checkpoint_x_dist/dir.x + other_y;
-	line(vertical_x, horizontal_y, vertical_checkpoint_x, y_shared_line);
-	line(vertical_x, other_y, vertical_checkpoint_x, y_vertical_check_line);
 	
 	// see if vertical_checkpoint_y is in between the values
 	// if it is you can be done pretty easily
@@ -137,33 +148,48 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	
 	const horizontal_checkpoint_x = c.x;
 	const horizontal_checkpoint_y = exit_horizontal_side=="top" ? c.y + c.r : c.y - c.r;
-	fill(0);
-	ellipse(horizontal_checkpoint_x, horizontal_checkpoint_y, 10,10);
 	
 	const horizontal_checkpoint_y_dist = horizontal_checkpoint_y - horizontal_y;
 	const x_shared_line = dir.x*horizontal_checkpoint_y_dist/dir.y + vertical_x;
 	const x_horizontal_check_line = dir.x*horizontal_checkpoint_y_dist/dir.y + other_x;
-	line(vertical_x, horizontal_y, x_shared_line, horizontal_checkpoint_y);
-	line(other_x, horizontal_y, x_horizontal_check_line, horizontal_checkpoint_y);
 	
 	if (abs(x_shared_line - horizontal_checkpoint_x) + abs(x_horizontal_check_line - horizontal_checkpoint_x) <= abs(x_shared_line - x_horizontal_check_line) + 0.01){
 		col.side = exit_horizontal_side;
-		col.side_orientation = "horiontal";
+		col.side_orientation = "horizontal";
 		col.dist = -horizontal_checkpoint_y_dist/dir.y;
 		return col;
 	}
 	
 
 	// if it still isn't inside, it in the corner
-	// you need to know if lines intersect circles
-	// there are three possible corners, try (vertial_x, horizontal_y) first
-	// then (vertical_x, other_y) and (other_x, horizontal_y)
-
 	col.side = "corner";
 	
+	// you need to know if lines intersect circles
 	
 	
-	return col;
+	// there are three possible corners, try (vertial_x, horizontal_y) first
+	
+	const corner_shared_intersects = this._line_circle_intersect(vertical_x, horizontal_y, dir, c).filter(x=>x>=0);
+	if (corner_shared_intersects.length > 0){
+		col.dist = -max(corner_shared_intersects);
+		return col;
+	}
+	
+	// then (vertical_x, other_y) and (other_x, horizontal_y)
+	const corner_vertical_intersects = this._line_circle_intersect(vertical_x, other_y, dir, c).filter(x=>x>=0);
+	if (corner_vertical_intersects.length > 0){
+		col.dist = -max(corner_vertical_intersects);
+		return col;
+	}
+	
+	// then (vertical_x, other_y) and (other_x, horizontal_y)
+	const corner_horizontal_intersects = this._line_circle_intersect(other_x, horizontal_y, dir, c).filter(x=>x>=0);
+	if (corner_horizontal_intersects.length > 0){
+		col.dist = -max(corner_horizontal_intersects);
+		return col;
+	}
+	
+	alert("UH OH");
 
 	// the point of intersection is the last point that will be in the rectangle
 	// the distance from the corner to that point is the distance
@@ -213,7 +239,37 @@ Game.prototype._circle_circle_collision = function (c1, c2, dir){
 Collision between maze and bullets
 */
 
-Game.prototype._maze_bullet_collision = function (bullet){
+Game.prototype._handle_maze_bullet_collisions = function (bullet){
+	// repeat a max of five times
+	// if resolving a collision creates another collision, just hope it doesn't do
+	// it more than five time
+	for (let i=0; i<5; i++){
+		
+		let collisions = this._find_maze_bullet_collisions(bullet);
+		
+		// if there are no collisions, we are done
+		if (collisions.length == 0){
+			return;
+		}
+		
+		// rewind reality to the point before the collision
+		const time = collisions[0].dist / bullet.speed;
+		bullet.update_pos(time);
+
+		if (collisions[0].type == "moving circle - circle"){
+			this._handle_bullet_collision_circle(bullet, collisions[0]);
+		} else {
+			this._handle_bullet_collision_rect(bullet, collisions[0]);
+		}
+
+		// move time back forward
+		bullet.update_pos(-time);
+		
+	}
+	
+};
+
+Game.prototype._find_maze_bullet_collisions = function (bullet){
 	// find the walls that need to be checked for collisions
 	const cells_to_check = this._bullet_possible_intersect_cells(bullet);
 	let walls_to_check = [];
@@ -284,29 +340,18 @@ Game.prototype._maze_bullet_collision = function (bullet){
 
 	}
 
-	console.log(collisions);
-	// TODO sort collisions based on distance
-
-	// rewind reality to the point before the collision
-	//const time = TODO
-	//bullet.update_pos(-time);
-
-	// TODO handle collisions[0]
-
-	// move time back forward
-	//bullet.update_pos(time);
-
-
-	// TODO if collisions.length > 1: run this function again
-
+	collisions.sort((x,y)=>x.dist>y.dist);
+	
+	return collisions;
 
 };
 
-Game.prototype._handle_bullet_collision_rect = function (bullet, col){
 
-	// TODO
-	// if it is a corner, take into account the direction and the rectangle orientation?
-	// there is no side orientation any more perhaps
+
+Game.prototype._handle_bullet_collision_rect = function (bullet, col){
+	if (col.side == "corner"){
+		col.side_orientation = col.rect_orientation;
+	}
 
 	if (col.side_orientation == "horizontal"){
 		bullet.dir.y *= -1;
