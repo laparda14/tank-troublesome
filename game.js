@@ -91,45 +91,82 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 		col.collision = (x_center_dist-r.width/2)*(x_center_dist-r.width/2) + (y_center_dist-r.height/2)*(y_center_dist-r.height/2) <= c.r*c.r;
 	}
 
-	if (col.collision){
-		const exit_vertical_side = dir.x > 0 ? "left" : "right";
-		const exit_horizontal_side = dir.y > 0 ? "bottom" : "top";
+	if (!col.collision){
+		return col;
+	}
+	col.rect_orientation = r.orientation;
+	
+	
+	const exit_vertical_side = dir.x > 0 ? "left" : "right";
+	const exit_horizontal_side = dir.y > 0 ? "top" : "bottom";
 
-		const vertical_x = exit_vertical_side=="left" ? r.x : r.x+r.width;
-		const other_x = exit_vertical_side!="left" ? r.x : r.x+r.width;
+	const vertical_x = exit_vertical_side=="left" ? r.x : r.x+r.width;
+	const other_x = exit_vertical_side!="left" ? r.x : r.x+r.width;
 
-		const horizontal_y = exit_horizontal_side=="top" ? r.y : r.y+r.height;
-		const other_y = exit_horizontal_side!="top" ? r.y : r.y+r.height;
+	const horizontal_y = exit_horizontal_side=="top" ? r.y : r.y+r.height;
+	const other_y = exit_horizontal_side!="top" ? r.y : r.y+r.height;
 
-		// check if it exits the vertical side
-		const vertical_checkpoint_x = exit_vertical_side=="left" ? c.x + c.r : c.x - c.r;
-		const vertical_checkpoint_y = c.y;
+	// check if it exits the vertical side
+	const vertical_checkpoint_x = exit_vertical_side=="left" ? c.x + c.r : c.x - c.r;
+	const vertical_checkpoint_y = c.y;
+	fill(0);
+	ellipse(vertical_checkpoint_x, vertical_checkpoint_y, 10,10);
 
-		// TODO
+	// TODO
 
-		// find how far vertical_checkpoint_x is away from vertical_x (abs?)
-		// calculate y value for lines starting at (vertical_x, horizontal_y) and (vertical_x, other_y)
-		// see if vertical_checkpoint_y is in between the values
-		// if it is you can be done pretty easily
-
-		// if not, do the same for horizontal
-		// but flip x and y
-
-		// if it still isn't inside, it in the corner
-		// you need to know if lines intersect circles
-		// there are three possible corners, try (vertial_x, horizontal_y) first
-		// then (vertical_x, other_y) and (other_x, horizontal_y)
-
-		// the point of intersection is the last point that will be in the rectangle
-		// the distance from the corner to that point is the distance
-
-
-		// I think returning the side as either "top", "bottom", "left", "right", or "corner"
-		// is the way to go
-
+	// find how far vertical_checkpoint_x is away from vertical_x (abs?)
+	const vertical_checkpoint_x_dist = vertical_checkpoint_x - vertical_x;
+	
+	// calculate y value for lines starting at (vertical_x, horizontal_y) and (vertical_x, other_y)
+	const y_shared_line = dir.y*vertical_checkpoint_x_dist/dir.x + horizontal_y;
+	const y_vertical_check_line = dir.y*vertical_checkpoint_x_dist/dir.x + other_y;
+	line(vertical_x, horizontal_y, vertical_checkpoint_x, y_shared_line);
+	line(vertical_x, other_y, vertical_checkpoint_x, y_vertical_check_line);
+	
+	// see if vertical_checkpoint_y is in between the values
+	// if it is you can be done pretty easily
+	if (abs(y_shared_line - vertical_checkpoint_y) + abs(y_vertical_check_line - vertical_checkpoint_y) <= abs(y_shared_line - y_vertical_check_line) + 0.01){
+		col.side = exit_vertical_side;
+		col.side_orientation = "vertical";
+		col.dist = -vertical_checkpoint_x_dist/dir.x;
+		return col;
 	}
 
+	// if not, do the same for horizontal
+	// but flip x and y
+	
+	const horizontal_checkpoint_x = c.x;
+	const horizontal_checkpoint_y = exit_horizontal_side=="top" ? c.y + c.r : c.y - c.r;
+	fill(0);
+	ellipse(horizontal_checkpoint_x, horizontal_checkpoint_y, 10,10);
+	
+	const horizontal_checkpoint_y_dist = horizontal_checkpoint_y - horizontal_y;
+	const x_shared_line = dir.x*horizontal_checkpoint_y_dist/dir.y + vertical_x;
+	const x_horizontal_check_line = dir.x*horizontal_checkpoint_y_dist/dir.y + other_x;
+	line(vertical_x, horizontal_y, x_shared_line, horizontal_checkpoint_y);
+	line(other_x, horizontal_y, x_horizontal_check_line, horizontal_checkpoint_y);
+	
+	if (abs(x_shared_line - horizontal_checkpoint_x) + abs(x_horizontal_check_line - horizontal_checkpoint_x) <= abs(x_shared_line - x_horizontal_check_line) + 0.01){
+		col.side = exit_horizontal_side;
+		col.side_orientation = "horiontal";
+		col.dist = -horizontal_checkpoint_y_dist/dir.y;
+		return col;
+	}
+	
+
+	// if it still isn't inside, it in the corner
+	// you need to know if lines intersect circles
+	// there are three possible corners, try (vertial_x, horizontal_y) first
+	// then (vertical_x, other_y) and (other_x, horizontal_y)
+
+	col.side = "corner";
+	
+	
+	
 	return col;
+
+	// the point of intersection is the last point that will be in the rectangle
+	// the distance from the corner to that point is the distance
 
 };
 

@@ -3,6 +3,7 @@ let WIDTH, HEIGHT, MOUSE_OFFSET;
 let game;
 debug = false;
 info = {};
+angle = 3.14;
 
 function draw_debug(info){
 	noStroke();
@@ -35,35 +36,39 @@ function draw(){
 	//scale(width/WIDTH);
 	background(230);
 	
-	/*c= {x:mouseX-MOUSE_OFFSET, y:mouseY-MOUSE_OFFSET, r:30};
-	r = {x:100, y:100, width:300, height:200};
-	dir = {x:cos(0.1),y:sin(0.1)}
+	c = {x:mouseX-MOUSE_OFFSET, y:mouseY-MOUSE_OFFSET, r:30};
+	r = {x:50, y:100, width:300, height:200};
+	dir = {x:cos(angle),y:sin(angle)};
 	collision = game._circle_rectangle_collision(c,r,dir);
-	console.log(collision);
+	if (frameCount % 20 == 0){
+		console.log(collision);
+	}
 	noStroke();
 	fill(255,0,0,90);
 	ellipse(c.x, c.y, c.r*2, c.r*2);
 	fill(255,0,0,50);
 	ellipse(c.x + dir.x*collision.dist, c.y + dir.y*collision.dist, c.r*2, c.r*2);
 	fill(0,255,0,90);
-	rect(r.x, r.y, r.width, r.height);*/
+	rect(r.x, r.y, r.width, r.height);
+	
+	strokeWeight(2);
+	stroke(0);
+	line(c.x,c.y,c.x+dir.x*100,c.y+dir.y*100);
 	
 
 	
-
-	if (debug){
-		draw_debug(info);
-	} else {
+/*
 		game.draw(); // this is moved here for now so I can debug collisions easier
 		//game.update(1);
-	}
-	//game.draw();
+	//game.draw();*/
 
 
 }
 
 
 function keyPressed(){
+	console.log(angle);
+	angle += 0.1;
 	if (key=="u"){
 		game.update(1);
 	} else if (key=="b"){
