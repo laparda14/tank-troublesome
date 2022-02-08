@@ -60,7 +60,10 @@ function draw(){
 // can't be held
 function keyPressed(){
 	if (key == "m"){
-		game.bullets.push(new Bullet({x:x + cos(angle)*25, y:y + sin(angle)*25}, angle, 4));
+		for (let i=0; i<10; i++){
+			game.bullets.push(new Bullet({x:x + cos(angle + i/10)*25, y:y + sin(angle + i/10)*25}, angle + i/10, 4));
+		}
+		
 	} if (key == "c"){
 		game.bullets = [];
 	}

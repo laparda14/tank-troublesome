@@ -82,6 +82,16 @@ Bullet.prototype.draw = function (){
 Generic collision checks
 */
 
+// get an array of all shapes a rectangle could possibly be touching
+// also works for a circle (using a bounding box)
+Game.prototype._rect_possible_intersect_shapes = function (rectangle){
+	const min_cell = this.maze.get_cell(rectangle.x - this.maze.wall_width/2, rectangle.y - this.maze.wall_width/2);
+	const max_cell = this.maze.get_cell(rectangle.x + rectangle.width + this.maze.wall_width/2, rectangle.y + rectangle.height + this.maze.wall_width/2);
+
+	return this.maze.get_shapes_in_block(min_cell.row, min_cell.col, max_cell.row, max_cell.col);
+
+};
+
 Game.prototype._line_circle_intersect = function (x_0, y_0, dir, circle){
 	const d_x = x_0 - circle.x;
 	const d_y = y_0 - circle.y;
@@ -276,74 +286,17 @@ Game.prototype._handle_maze_bullet_collisions = function (bullet){
 
 Game.prototype._find_maze_bullet_collisions = function (bullet){
 	// find the walls that need to be checked for collisions
-	const cells_to_check = this._bullet_possible_intersect_cells(bullet);
-	let walls_to_check = [];
-	let walls_already_checking = {};
-
-	for (let i=0; i<cells_to_check.length; i++){
-		for (let j=0; j<4; j++){
-
-			const wall = {row:cells_to_check[i].row, col:cells_to_check[i].col, dir:DIRS[j].dir};
-
-			if (!walls_already_checking.hasOwnProperty(JSON.stringify(wall))){
-				
-				if (this.maze.cells[wall.row][wall.col][wall.dir]){
-					walls_to_check.push(wall);
-				}
-
-				walls_already_checking[JSON.stringify(this.maze.get_same_wall(wall.row, wall.col, wall.dir))] = 0;
-
-			}
-		}
-	}
+	const bounding_box = {x:bullet.pos.x-bullet.r, y:bullet.pos.y-bullet.r, width:bullet.r*2, height:bullet.r*2};
 
 	// find the shapes that need to be checked for collisions
-	const shapes_to_check = walls_to_check.map(w=>this.maze.get_wall_shapes(w.row, w.col, w.dir));
+	const shapes_to_check = this._rect_possible_intersect_shapes(bounding_box);
 
-	let collisions = [];
-
-	let circles_already_checked = {};
+	const bullet_shape = {x:bullet.pos.x, y:bullet.pos.y, r:bullet.r};
 
 	// check collision on each of the shapes
-	// if there is a collision, handle it
-	// after one collision is found, keep going just in case, but I might change that later
-	for (let i=0; i<shapes_to_check.length; i++){
-		const shapes = shapes_to_check[i];
-		const rectangle = shapes.rectangle;
-		const circle1 = shapes.circle1;
-		const circle2 = shapes.circle2;
+	let collisions = shapes_to_check.map(s=>s.type=="rectangle"?this._circle_rectangle_collision(bullet_shape, s, bullet.dir):this._circle_circle_collision(bullet_shape, s, bullet.dir));
+	collisions = collisions.filter(c=>c.collision);
 
-
-		const bullet_shape = {x:bullet.pos.x, y:bullet.pos.y, r:bullet.r};
-
-		// add rect collision to list if needed
-		const rect_col = this._circle_rectangle_collision(bullet_shape, rectangle, bullet.dir);
-		if (rect_col.collision){
-			collisions.push(rect_col);
-		}
-
-		// add circles to list if needed
-		const circle1_json = floor(circle1.x) + " " + floor(circle1.y) + " " + floor(circle1.r);
-		const circle2_json = floor(circle2.x) + " " + floor(circle2.y) + " " + floor(circle2.r);
-		if (!circles_already_checked.hasOwnProperty(circle1_json)){
-			circles_already_checked[circle1_json] = 0;
-
-			const circle_col = this._circle_circle_collision(bullet_shape, circle1, bullet.dir);
-			if (circle_col.collision){
-				collisions.push(circle_col);
-			}
-		}
-		if (!circles_already_checked.hasOwnProperty(circle2_json)){
-			circles_already_checked[circle2_json] = 0;
-
-			const circle_col = this._circle_circle_collision(bullet_shape, circle2, bullet.dir);
-			if (circle_col.collision){
-				collisions.push(circle_col);
-			}
-		}
-
-
-	}
 
 	collisions.sort((x,y)=>x.dist-y.dist);
 	
@@ -371,23 +324,5 @@ Game.prototype._handle_bullet_collision_circle = function (bullet, col){
 	const normal_dot_dir = bullet.dir.x*col.normal.x + bullet.dir.y*col.normal.y;
 	bullet.dir.x = bullet.dir.x - 2*col.normal.x*normal_dot_dir;
 	bullet.dir.y = bullet.dir.y - 2*col.normal.y*normal_dot_dir;
-
-};
-
-// get an array of all cells a bullet could possibly be touching (using a bounding box)
-Game.prototype._bullet_possible_intersect_cells = function (bul){
-	// a box is either in 1, 2, or 4 cells
-	// we only need to check two opposite corners
-
-	const min_cell = this.maze.get_cell(bul.pos.x - bul.r - this.maze.wall_width/2, bul.pos.y - bul.r - this.maze.wall_width/2);
-	const max_cell = this.maze.get_cell(bul.pos.x + bul.r + this.maze.wall_width/2, bul.pos.y + bul.r + this.maze.wall_width/2);
-
-	let possible_cells = [];
-	for (let i=max(min_cell.row,0); i<=min(max_cell.row,this.maze.size-1); i++){
-		for (let j=max(min_cell.col,0); j<=min(max_cell.col,this.maze.size-1); j++){
-			possible_cells.push({row:i, col:j});
-		}
-	}
-	return possible_cells;
 
 };

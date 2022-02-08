@@ -1,10 +1,6 @@
 // information about directions
 const PAIRS = {N:"S", S:"N", W:"E", E:"W"};
-const DIRS = [{dr:-1, dc:0, dir:"N"}, {dr:1, dc:0, dir:"S"}, {dr:0, dc:1, dir:"E"}, {dr:0, dc:-1, dir:"W"}]
-const DIR_LOOKUP = {};
-for (let i=0; i<4; i++){
-	DIR_LOOKUP[DIRS[i].dir] = {dr:DIRS[i].dr, dc:DIRS[i].dc};
-}
+const DIR_LOOKUP = {N:{dr:-1, dc:0}, S:{dr:1, dc:0}, E:{dr:0, dc:1}, W:{dr:0, dc:-1}};
 
 function Maze(){
 	// number of subsections of the maze
@@ -33,9 +29,42 @@ function Maze(){
 	for (let i=0; i<10; i++){
 		const row = floor(random()*(this.size-2)) + 1;
 		const col = floor(random()*(this.size-2)) + 1;
-		const dir = DIRS[floor(random()*4)];
-		this.cells[row][col][dir.dir] = false;
-		this.cells[row + dir.dr][col + dir.dc][PAIRS[dir.dir]] = false;
+		const dir = Object.keys(DIR_LOOKUP)[floor(random()*4)];
+		const d = DIR_LOOKUP[dir];
+		this.cells[row][col][dir] = false;
+		this.cells[row + d.dr][col + d.dc][PAIRS[dir]] = false;
+	}
+
+	
+	// create 2d array of empty 1d arrays
+	this.shapes = new Array(this.size);
+	for (let i=0; i<this.size; i++){
+		this.shapes[i] = new Array(this.size);
+		for (let j=0; j<this.size; j++){
+			this.shapes[i][j] = new Array;
+		}
+	}
+
+	// populate 2d array with shapes
+	let prev_shapes = {};
+	for (let i=0; i<this.size; i++){
+		for (let j=0; j<this.size; j++){
+			for (let dir in DIR_LOOKUP){
+				if (!this.cells[i][j][dir]){
+					continue;
+				}
+				let shapes_in_wall = this._get_wall_shapes(i, j, dir);
+				for (let shape of shapes_in_wall){
+					// if two shapes are the same, use the same one everywhere
+					// should allow === checks between shapes
+					if (!prev_shapes.hasOwnProperty(shape.id)){
+						prev_shapes[shape.id] = shape;
+					}
+					const current_shape = prev_shapes[shape.id];
+					this.shapes[i][j].push(current_shape);
+				}
+			}
+		}
 	}
 }
 
@@ -69,11 +98,11 @@ Maze.prototype._traverse = function (start_row, start_col){
 Maze.prototype._random_neighbor = function (row, col){
 	let neighbors = [];
 
-	for (var i=0; i<4; i++){
-		d = DIRS[i];
+	for (let dir in DIR_LOOKUP){
+		const d = DIR_LOOKUP[dir];
 		if (row+d.dr>=0 && row+d.dr<this.size && col+d.dc>=0 && col+d.dc<this.size){
 			if (!this.cells[row+d.dr][col+d.dc].visited){
-				neighbors.push({dir:d.dir, row:row+d.dr, col:col+d.dc});
+				neighbors.push({dir:dir, row:row+d.dr, col:col+d.dc});
 			}
 		}
 	}
@@ -129,69 +158,65 @@ Maze.prototype.get_cell = function (x, y){
 }
 
 
+Maze.prototype.get_shapes_in_block = function (min_row, min_col, max_row, max_col){
+	let shapes = [];
+	let prev_shapes = {};
+	for (let i=max(min_row,0); i<=min(max_row,this.size-1); i++){
+		for (let j=max(min_col,0); j<=min(max_col,this.size-1); j++){
+			for (let shape of this.shapes[i][j]){
+				if (!prev_shapes.hasOwnProperty(shape.id)){
+					prev_shapes[shape.id] = 0;
+					shapes.push(shape);
+				}
+			}
+		}
+	}
+	return shapes;
+};
+
 // a wall is made up of a rectangle with two circles on the ends
-Maze.prototype.get_wall_shapes = function (row, col, dir){
-	let shapes;
+Maze.prototype._get_wall_shapes = function (row, col, dir){
 	const cell_center = {x: this.section_size*col + this.section_size/2, y: this.section_size*row + this.section_size/2};
 	
 	const shape_center = {x: cell_center.x + DIR_LOOKUP[dir].dc*this.section_size/2, y: cell_center.y + DIR_LOOKUP[dir].dr*this.section_size/2};
 
-	if (dir == "N" || dir == "S"){
-		// horizontal wall
+	const orientation = (dir == "N" || dir == "S")?"horizontal":"vertical";
+	const is_horizontal = orientation == "horizontal";
 
-		shapes = {
-			rectangle: {
-				x: shape_center.x - this.section_size/2,
-				y: shape_center.y - this.wall_width/2,
-				width: this.section_size,
-				height: this.wall_width,
-				orientation: "horizontal"
-			},
-			circle1: {
-				x: shape_center.x - this.section_size/2,
-				y: shape_center.y,
-				r: this.wall_width/2
-			},
-			circle2: {
-				x: shape_center.x + this.section_size/2,
-				y: shape_center.y,
-				r: this.wall_width/2
-			}
-		};
+	let shapes = [
+		{
+			type: "rectangle",
+			x: shape_center.x - (is_horizontal?this.section_size/2:this.wall_width/2),
+			y: shape_center.y - (is_horizontal?this.wall_width/2:this.section_size/2),
+			width: (is_horizontal?this.section_size:this.wall_width),
+			height: (is_horizontal?this.wall_width:this.section_size),
+			orientation: orientation
+		},
+		{
+			type: "circle",
+			x: shape_center.x - (is_horizontal?this.section_size/2:0),
+			y: shape_center.y - (is_horizontal?0:this.section_size/2),
+			r: this.wall_width/2
+		},
+		{
+			type: "circle",
+			x: shape_center.x + (is_horizontal?this.section_size/2:0) ,
+			y: shape_center.y + (is_horizontal?0:this.section_size/2) ,
+			r: this.wall_width/2
+		}
+	];
 
-	} else if (dir == "E" || dir == "W"){
-		// vertical wall
-
-		shapes = {
-			rectangle: {
-				x: shape_center.x - this.wall_width/2,
-				y: shape_center.y - this.section_size/2,
-				width: this.wall_width,
-				height: this.section_size,
-				orientation: "vertical"
-			},
-			circle1: {
-				x: shape_center.x,
-				y: shape_center.y - this.section_size/2,
-				r: this.wall_width/2
-			},
-			circle2: {
-				x: shape_center.x,
-				y: shape_center.y + this.section_size/2,
-				r: this.wall_width/2
-			}
-		};
-
-	}
-
-	/*fill(255,0,0,80);
-	noStroke();
-	rect(shapes.rectangle.x, shapes.rectangle.y, shapes.rectangle.width, shapes.rectangle.height);
-
-	fill(0,255,0,80);
-	ellipse(shapes.circle1.x, shapes.circle1.y, 2*shapes.circle1.r);
-	ellipse(shapes.circle2.x, shapes.circle2.y, 2*shapes.circle1.r);*/
+	shapes.map(x=>{x.id = this._get_shape_id(x)});
 
 	return shapes;
+};
+
+Maze.prototype._get_shape_id = function (shape){
+	if (shape.type=="rectangle"){
+		return "rectangle " + floor(shape.x) + " " + floor(shape.y) + " " + floor(shape.width) + " " + floor(shape.height);
+	} else if (shape.type=="circle"){
+		return "circle " + floor(shape.x) + " " + floor(shape.y) + " " + floor(shape.r);
+	}
+	console.log("Uh Oh");
 };
 
