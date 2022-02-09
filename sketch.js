@@ -2,6 +2,7 @@ let WIDTH, HEIGHT;
 
 let game;
 let player;
+let player2;
 
 let x = 100;
 let y = 100;
