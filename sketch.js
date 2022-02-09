@@ -1,6 +1,7 @@
 let WIDTH, HEIGHT;
 
 let game;
+let player;
 
 let x = 100;
 let y = 100;
@@ -21,6 +22,7 @@ function setup(){
 	frameRate(60);
 
 	game = new Game();
+	player = new Player({x:250,y:650}, 0, color(255,0,0));
 	canvas.style("border", floor(game.maze.wall_width/2*width/WIDTH) + "px solid black");
 }
 
@@ -30,39 +32,28 @@ function draw(){
 
 	// moving controls, can be held
 	if (keyIsDown(LEFT_ARROW)){
-		angle -= 0.08;
+		player.turn(left=true);
 	} else if (keyIsDown(RIGHT_ARROW)){
-		angle += 0.08;
+		player.turn(left=false);
 	}
 	if (keyIsDown(UP_ARROW)){
-		x += 3*cos(angle);
-		y += 3*sin(angle);
+		player.move(forward=true);
 	} else if (keyIsDown(DOWN_ARROW)){
-		x -= 2*cos(angle);
-		y -= 2*sin(angle);
+		player.move(forward=false);
 	}
-	
-	if (!debug){
-		game.update();
-	}
-	game.draw();
 
-	fill(0,0,255);
-	noStroke();
-	ellipse(x,y,50);
+	player.draw();
 	
-	strokeWeight(5);
-	stroke(0);
-	line(x,y,x+30*cos(angle),y+30*sin(angle));
+	game.update();
+	game.draw();
+	
 
 }
 
 // can't be held
 function keyPressed(){
 	if (key == "m"){
-		for (let i=0; i<100; i++){
-			game.bullets.push(new Bullet({x:x + cos(angle + i/10)*25, y:y + sin(angle + i/10)*25}, angle + i/10, 4));
-		}
+		game.bullets.push(new Bullet({x:player.pos.x + cos(player.angle)*25, y:player.pos.y + sin(player.angle)*25}, player.angle, 4));
 		
 	} if (key == "c"){
 		game.bullets = [];
