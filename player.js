@@ -1,4 +1,4 @@
-function Player(pos, angle, color){
+function Player(pos, angle, color, input_getter){
 	this.pos = pos; // center
 	this.angle = angle;
 
@@ -10,6 +10,10 @@ function Player(pos, angle, color){
 	this.back_speed = 2;
 
 	this.color = color;
+
+	this.input_getter = input_getter;
+
+	this._already_shot = false;
 }
 
 Player.prototype.draw = function (){
@@ -43,3 +47,58 @@ Player.prototype.move = function (forward){
 		this.pos.y -= this.back_speed*sin(this.angle);
 	}
 };
+
+// input should be something like {left:false, right:false, forward:false, back:false, shoot:false}
+// return false for no bullet or true for a bullet
+Player.prototype.handle_input = function() {
+	const input = this.input_getter();
+	if (input.left && !input.right){
+		this.turn(left=true);
+	} else if (!input.left && input.right){
+		this.turn(left=false);
+	}
+
+	if (input.forward && !input.back){
+		this.move(forward=true);
+	} else if (!input.forward && input.back){
+		this.move(forward=false);
+	}
+
+	if (input.shoot){
+		if (!this._already_shot){
+			this._already_shot = true;
+			return true;
+		}
+	} else {
+		this._already_shot = false;
+	}
+	return false;
+};
+
+// input is "<left><right><forward><back><shoot>"
+// make sure to use capital letters
+function createPlayerKeyboardInput(s){
+	const f = function (){
+		const input = {};
+		input.left = keyIsDown(s.charCodeAt(0));
+		input.right = keyIsDown(s.charCodeAt(1));
+		input.forward = keyIsDown(s.charCodeAt(2));
+		input.back = keyIsDown(s.charCodeAt(3));
+		input.shoot = keyIsDown(s.charCodeAt(4));
+		return input;
+	};
+	return f;
+}
+
+function createPlayerArrowKeysInput(shoot){
+	const f = function (){
+		const input = {};
+		input.left = keyIsDown(LEFT_ARROW);
+		input.right = keyIsDown(RIGHT_ARROW);
+		input.forward = keyIsDown(UP_ARROW);
+		input.back = keyIsDown(DOWN_ARROW);
+		input.shoot = keyIsDown(shoot.charCodeAt(0));
+		return input;
+	};
+	return f;
+}

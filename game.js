@@ -158,25 +158,24 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	
 	
 	// there are three possible corners, try (vertial_x, horizontal_y) first
-	
-	const corner_shared_intersects = this._line_circle_intersect(vertical_x, horizontal_y, dir, c).filter(x=>x>=0);
-	if (corner_shared_intersects.length > 0){
-		col.dist = -max(corner_shared_intersects);
-		return col;
+	const corner_shared_intersects = this._line_circle_intersect(vertical_x, horizontal_y, dir, c);
+	if (corner_shared_intersects[0] >= 0 || corner_shared_intersects[1] >= 0){
+    	col.dist = corner_shared_intersects[0]>corner_shared_intersects[1]?-corner_shared_intersects[0]:-corner_shared_intersects[1];
+    	return col;
 	}
 	
 	// then (vertical_x, other_y) and (other_x, horizontal_y)
-	const corner_vertical_intersects = this._line_circle_intersect(vertical_x, other_y, dir, c).filter(x=>x>=0);
-	if (corner_vertical_intersects.length > 0){
-		col.dist = -max(corner_vertical_intersects);
-		return col;
+	const corner_vertical_intersects = this._line_circle_intersect(vertical_x, other_y, dir, c);
+	if (corner_vertical_intersects[0] >= 0 || corner_vertical_intersects[1] >= 0){
+    	col.dist = corner_vertical_intersects[0]>corner_vertical_intersects[1]?-corner_vertical_intersects[0]:-corner_vertical_intersects[1];
+    	return col;
 	}
 	
 	// then (vertical_x, other_y) and (other_x, horizontal_y)
-	const corner_horizontal_intersects = this._line_circle_intersect(other_x, horizontal_y, dir, c).filter(x=>x>=0);
-	if (corner_horizontal_intersects.length > 0){
-		col.dist = -max(corner_horizontal_intersects);
-		return col;
+	const corner_horizontal_intersects = this._line_circle_intersect(other_x, horizontal_y, dir, c);
+	if (corner_horizontal_intersects[0] >= 0 || corner_horizontal_intersects[1] >= 0){
+    	col.dist = corner_horizontal_intersects[0]>corner_horizontal_intersects[1]?-corner_horizontal_intersects[0]:-corner_horizontal_intersects[1];
+    	return col;
 	}
 	
 	alert("UH OH");
