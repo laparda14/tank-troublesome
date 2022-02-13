@@ -53,31 +53,6 @@ Game.prototype.draw = function(){
 };
 
 
-function Bullet(pos, angle, speed, r=6, life=1800){
-	this.pos = pos;
-
-	this.dir = {x:cos(angle), y:sin(angle)};
-
-	this.speed = speed;
-
-	this.r = r;
-	this.life = life;
-}
-
-Bullet.prototype.update_pos = function (dt){
-	this.pos.x += this.dir.x*this.speed*dt;
-	this.pos.y += this.dir.y*this.speed*dt;
-};
-
-Bullet.prototype.draw = function (){
-	noStroke();
-	fill(0);
-	if (this.life < 20){
-		fill(230 - 230*this.life/20)
-	}
-	ellipse(this.pos.x, this.pos.y, this.r*2, this.r*2);
-};
-
 /*
 Generic collision checks
 */
@@ -183,25 +158,24 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	
 	
 	// there are three possible corners, try (vertial_x, horizontal_y) first
-	
-	const corner_shared_intersects = this._line_circle_intersect(vertical_x, horizontal_y, dir, c).filter(x=>x>=0);
-	if (corner_shared_intersects.length > 0){
-		col.dist = -max(corner_shared_intersects);
-		return col;
+	const corner_shared_intersects = this._line_circle_intersect(vertical_x, horizontal_y, dir, c);
+	if (corner_shared_intersects[0] >= 0 || corner_shared_intersects[1] >= 0){
+    	col.dist = corner_shared_intersects[0]>corner_shared_intersects[1]?-corner_shared_intersects[0]:-corner_shared_intersects[1];
+    	return col;
 	}
 	
 	// then (vertical_x, other_y) and (other_x, horizontal_y)
-	const corner_vertical_intersects = this._line_circle_intersect(vertical_x, other_y, dir, c).filter(x=>x>=0);
-	if (corner_vertical_intersects.length > 0){
-		col.dist = -max(corner_vertical_intersects);
-		return col;
+	const corner_vertical_intersects = this._line_circle_intersect(vertical_x, other_y, dir, c);
+	if (corner_vertical_intersects[0] >= 0 || corner_vertical_intersects[1] >= 0){
+    	col.dist = corner_vertical_intersects[0]>corner_vertical_intersects[1]?-corner_vertical_intersects[0]:-corner_vertical_intersects[1];
+    	return col;
 	}
 	
 	// then (vertical_x, other_y) and (other_x, horizontal_y)
-	const corner_horizontal_intersects = this._line_circle_intersect(other_x, horizontal_y, dir, c).filter(x=>x>=0);
-	if (corner_horizontal_intersects.length > 0){
-		col.dist = -max(corner_horizontal_intersects);
-		return col;
+	const corner_horizontal_intersects = this._line_circle_intersect(other_x, horizontal_y, dir, c);
+	if (corner_horizontal_intersects[0] >= 0 || corner_horizontal_intersects[1] >= 0){
+    	col.dist = corner_horizontal_intersects[0]>corner_horizontal_intersects[1]?-corner_horizontal_intersects[0]:-corner_horizontal_intersects[1];
+    	return col;
 	}
 	
 	alert("UH OH");

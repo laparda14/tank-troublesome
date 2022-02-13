@@ -1,6 +1,8 @@
 let WIDTH, HEIGHT;
 
 let game;
+let player;
+let player2;
 
 let x = 100;
 let y = 100;
@@ -21,50 +23,43 @@ function setup(){
 	frameRate(60);
 
 	game = new Game();
+	player = new Player({x:250,y:650}, 0, color(255,0,0), createPlayerArrowKeysInput("M"));
+	player2 = new Player({x:550, y:150}, 0, color(0,255,0), createPlayerKeyboardInput("SFEDQ"))
+
 	canvas.style("border", floor(game.maze.wall_width/2*width/WIDTH) + "px solid black");
 }
 
 function draw(){
 	scale(width/WIDTH);
 	background(230);
+	console.log(player.input_getter());
+	const shoot = player.handle_input();
+	if (shoot){
+		for (let i=0; i<10; i++){
+			game.bullets.push(new Bullet({x:player.pos.x + cos(player.angle)*25, y:player.pos.y + sin(player.angle)*25}, player.angle + 2*PI/10*i, 4));
+		}
+	}
+	player.draw();
 
-	// moving controls, can be held
-	if (keyIsDown(LEFT_ARROW)){
-		angle -= 0.08;
-	} else if (keyIsDown(RIGHT_ARROW)){
-		angle += 0.08;
+	const shoot2 = player2.handle_input();
+	if (shoot2){
+		for (let i=0; i<6; i++){
+			game.bullets.push(new Bullet({x:player2.pos.x + cos(player2.angle)*25, y:player2.pos.y + sin(player2.angle)*25}, player2.angle - PI/8 + 2*PI/8*i/5, 4));
+		}
 	}
-	if (keyIsDown(UP_ARROW)){
-		x += 3*cos(angle);
-		y += 3*sin(angle);
-	} else if (keyIsDown(DOWN_ARROW)){
-		x -= 2*cos(angle);
-		y -= 2*sin(angle);
-	}
+	player2.draw();
 	
 	if (!debug){
 		game.update();
 	}
 	game.draw();
-
-	fill(0,0,255);
-	noStroke();
-	ellipse(x,y,50);
 	
-	strokeWeight(5);
-	stroke(0);
-	line(x,y,x+30*cos(angle),y+30*sin(angle));
 
 }
 
 // can't be held
 function keyPressed(){
-	if (key == "m"){
-		for (let i=0; i<100; i++){
-			game.bullets.push(new Bullet({x:x + cos(angle + i/10)*25, y:y + sin(angle + i/10)*25}, angle + i/10, 4));
-		}
-		
-	} if (key == "c"){
+	if (key == "c"){
 		game.bullets = [];
 	}
 }
