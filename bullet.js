@@ -1,4 +1,4 @@
-function Bullet(pos, angle, speed, r=6, life=1800){
+function Bullet(pos, angle, speed, r, life){
 	this.pos = pos;
 
 	this.dir = {x:cos(angle), y:sin(angle)};
@@ -18,7 +18,7 @@ Bullet.prototype.draw = function (){
 	noStroke();
 	fill(0);
 	if (this.life < 20){
-		fill(230 - 230*this.life/20)
+		fill(230 - 230*this.life/20);
 	}
 	ellipse(this.pos.x, this.pos.y, this.r*2, this.r*2);
 };

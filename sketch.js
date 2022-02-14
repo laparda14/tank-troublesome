@@ -1,12 +1,7 @@
 let WIDTH, HEIGHT;
 
 let game;
-let player;
-let player2;
 
-let x = 100;
-let y = 100;
-let angle = 0;
 let debug = false;
 
 function mouseCoords(){
@@ -23,36 +18,67 @@ function setup(){
 	frameRate(60);
 
 	game = new Game();
-	player = new Player({x:250,y:650}, 0, color(255,0,0), createPlayerArrowKeysInput("M"));
-	player2 = new Player({x:550, y:150}, 0, color(0,255,0), createPlayerKeyboardInput("SFEDQ"))
+	game.players.push(
+		new Player({x:250,y:650}, 0, color(255,0,0), createPlayerArrowKeysInput("M"))
+	);
+	game.players.push(
+		new Player({x:550, y:150}, 0, color(0,255,0), createPlayerKeyboardInput("SFEDQ"))
+	);
 
 	canvas.style("border", floor(game.maze.wall_width/2*width/WIDTH) + "px solid black");
 }
 
-function draw(){
-	scale(width/WIDTH);
-	background(230);
-	console.log(player.input_getter());
-	const shoot = player.handle_input();
-	if (shoot){
-		for (let i=0; i<10; i++){
-			game.bullets.push(new Bullet({x:player.pos.x + cos(player.angle)*25, y:player.pos.y + sin(player.angle)*25}, player.angle + 2*PI/10*i, 4));
-		}
-	}
-	player.draw();
 
-	const shoot2 = player2.handle_input();
-	if (shoot2){
-		for (let i=0; i<6; i++){
-			game.bullets.push(new Bullet({x:player2.pos.x + cos(player2.angle)*25, y:player2.pos.y + sin(player2.angle)*25}, player2.angle - PI/8 + 2*PI/8*i/5, 4));
-		}
-	}
-	player2.draw();
+function draw_rot_rect(r){
+	translate(r.center_x, r.center_y);
+	rotate(r.angle);
+	stroke(0);
+	strokeWeight(1);
+	fill(255,0,0);
+	rect(-r.length/2, -r.width/2, r.length, r.width);
+	resetMatrix();
+}
+
+function draw(){
+	//scale(width/WIDTH);
+	background(230);
 	
-	if (!debug){
+	angle = 1;
+	dir = {x:cos(angle), y:sin(angle)};
+
+	// moving rect
+	shape1 = {center_x:mouseX, center_y:mouseY, length:200, width:100, angle:angle};
+
+	// circle
+	shape2 = {x:200, y:200, r:20};
+
+	stroke(0);
+	strokeWeight(2);
+	line(shape1.center_x, shape1.center_y, shape1.center_x+dir.x*150, shape1.center_y+dir.y*150);
+
+	noStroke();
+	fill(255,0,0);
+	draw_rot_rect(shape1);
+
+	fill(0,0,255)
+	ellipse(shape2.x, shape2.y, shape2.r*2, shape2.r*2);
+
+	
+	collision = game._rot_rectangle_circle_collision(shape1, shape2, dir);
+	console.log(collision);
+	if (collision.collision){
+		fill(0,205,0);
+		shape1.center_x += collision.dist*dir.x;
+		shape1.center_y += collision.dist*dir.y;
+		draw_rot_rect(shape1);
+
+	}
+	
+
+	/*if (!debug){
 		game.update();
 	}
-	game.draw();
+	game.draw();*/
 	
 
 }

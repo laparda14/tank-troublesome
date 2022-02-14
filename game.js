@@ -1,21 +1,39 @@
+// TODO clean up comments
+
+const EPSILON = 0.01;
+
 function Game(){
 	this.maze = new Maze();
 	this.bullets = [];
+	this.players = [];
 }
 
 Game.prototype.update = function(){
-	// decrement life on all bullets
-	this.bullets.map(b=>b.life--);
+	// move players, shoot bullets
+	for (const p of this.players){
+		const shoot = p.handle_input();
+		if (shoot){
+			this.bullets.push(p.create_bullet());
+		}
+	}
 
-	// remove expired bullets
-	this.bullets = this.bullets.filter(b=>b.life>0);
+	// player wall collisions
+	// TODO TODO
 
 	// move bullets
-	this.bullets.map(b=>b.update_pos(1));
+	// bullet maze collisions
+	this.bullets = this.bullets.filter(b=>{
+		const alive = (--b.life)>0;
+		if (alive){
+			b.update_pos(1);
+			this._handle_maze_bullet_collisions(b);
+		}
+		return alive;
+	});
 
-	// handle bullet collisions with maze
-	this.bullets.map(b=>this._handle_maze_bullet_collisions(b));
-
+	// player bullet collisions
+		// go through bullets and put into grids
+		// TODO TODO
 
 };
 
@@ -47,9 +65,15 @@ Game.prototype.draw = function(){
 	// draw the maze
 	this.maze.draw();
 	
+	// draw the players
+	for (const p of this.players){
+		p.draw();
+	}
 
 	// draw the bullets
-	this.bullets.map(b=>b.draw());
+	for (const b of this.bullets){
+		b.draw();
+	}
 };
 
 
@@ -57,19 +81,56 @@ Game.prototype.draw = function(){
 Generic collision checks
 */
 
-// get an array of all shapes a rectangle could possibly be touching
-// also works for a circle (using a bounding box)
-Game.prototype._rect_possible_intersect_shapes = function (rectangle){
-	const min_cell = this.maze.get_cell(rectangle.x - this.maze.wall_width/2, rectangle.y - this.maze.wall_width/2);
-	const max_cell = this.maze.get_cell(rectangle.x + rectangle.width + this.maze.wall_width/2, rectangle.y + rectangle.height + this.maze.wall_width/2);
+// collision information with moving circle and a circle
 
-	return this.maze.get_shapes_in_block(min_cell.row, min_cell.col, max_cell.row, max_cell.col);
+// c1 = {x:<center x>, y:<center y>, r:<radius>};
+// c2 = {x:<center x>, y:<center y>, r:<radius>};
+// dir = {x:<x component>, y:<y component>}; <-- normalized
+Game.prototype._circle_circle_collision = function (c1, c2, dir){
+	const sq_dist = (c1.x-c2.x)*(c1.x-c2.x) + (c1.y-c2.y)*(c1.y-c2.y);
+	const col = {collision:sq_dist < (c1.r + c2.r)*(c1.r + c2.r) - EPSILON};
+	col.type = "moving circle - circle";
+	if (col.collision){
+		const dist_center_x = c1.x - c2.x;
+		const dist_center_y = c1.y - c2.y;
 
+		// find dist
+		const b = dist_center_x*dir.x + dist_center_y*dir.y;
+		const c = sq_dist - (c1.r + c2.r)*(c1.r + c2.r);
+
+		const disc = sqrt(b*b - c);
+
+		const sol1 = -b + disc;
+		const sol2 = -b - disc;
+
+		if (sol1 > 0){
+			col.dist = sol2;
+		} else if (sol2 > 0){
+			col.dist = sol1;
+		} else {
+			col.dist = max(sol1, sol2);
+		}
+
+		// find unit normal
+		col.normal = {x: dist_center_x + col.dist*dir.x, y:dist_center_y + col.dist*dir.y};
+		const mag_mult = 1/sqrt(col.normal.x*col.normal.x + col.normal.y*col.normal.y);
+		col.normal.x *= mag_mult;
+		col.normal.y *= mag_mult;
+
+	}
+
+
+	return col;
 };
 
-Game.prototype._line_circle_intersect = function (x_0, y_0, dir, circle){
-	const d_x = x_0 - circle.x;
-	const d_y = y_0 - circle.y;
+
+// x0 = <origin of line x>
+// y0 = <origin of line y>
+// dir = {x:<x component>, y:<y component>}; <-- direction of line, normalized
+// circle = {x:<center x>, y:<center y>, r:<radius>};
+Game.prototype._line_circle_intersect = function (x0, y0, dir, circle){
+	const d_x = x0 - circle.x;
+	const d_y = y0 - circle.y;
 	
 	const b = dir.x*d_x + dir.y*d_y;
 	const c = d_x*d_x + d_y*d_y - circle.r*circle.r;
@@ -81,21 +142,28 @@ Game.prototype._line_circle_intersect = function (x_0, y_0, dir, circle){
 	
 	const sqrt_disc = sqrt(disc);
 	return [-b - sqrt_disc, -b + sqrt_disc];
-}
+};
+
+
 
 // collision information with a moving circle and (non-rotated) rectangle
+// WARNING: only works if rectangle is larger than circle
+
+// c = {x:<center x>, y:<center y>, r:<radius>};
+// r = {x:<top-left x>, y:<top-left y>, width:<width>, height:<height>};
+// dir = {x:<x component>, y:<y component>}; <-- normalized
 Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	let col = {};
 	col.type = "moving circle - rectangle";
 	const center = {x:r.x+r.width/2, y:r.y+r.height/2};
 	const x_center_dist = abs(c.x - center.x);
 	const y_center_dist = abs(c.y - center.y);
-	if (x_center_dist >= c.r + r.width/2 || y_center_dist >= c.r + r.height/2){
+	if (x_center_dist + EPSILON >= c.r + r.width/2 || y_center_dist + EPSILON >= c.r + r.height/2){
 		col.collision = false;
-	}  else if (x_center_dist < r.width/2 || y_center_dist < r.height/2) {
+	}  else if (x_center_dist + EPSILON < r.width/2 || y_center_dist + EPSILON < r.height/2) {
 		col.collision = true;
 	} else {
-		col.collision = (x_center_dist-r.width/2)*(x_center_dist-r.width/2) + (y_center_dist-r.height/2)*(y_center_dist-r.height/2) < c.r*c.r;
+		col.collision = (x_center_dist-r.width/2)*(x_center_dist-r.width/2) + (y_center_dist-r.height/2)*(y_center_dist-r.height/2) + EPSILON < c.r*c.r;
 	}
 
 	if (!col.collision){
@@ -126,7 +194,7 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	
 	// see if vertical_checkpoint_y is in between the values
 	// if it is you can be done pretty easily
-	if (abs(y_shared_line - vertical_checkpoint_y) + abs(y_vertical_check_line - vertical_checkpoint_y) <= abs(y_shared_line - y_vertical_check_line) + 0.01){
+	if (abs(y_shared_line - vertical_checkpoint_y) + abs(y_vertical_check_line - vertical_checkpoint_y) <= abs(y_shared_line - y_vertical_check_line) + EPSILON){
 		col.side = exit_vertical_side;
 		col.side_orientation = "vertical";
 		col.dist = -vertical_checkpoint_x_dist/dir.x;
@@ -143,7 +211,7 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 	const x_shared_line = dir.x*horizontal_checkpoint_y_dist/dir.y + vertical_x;
 	const x_horizontal_check_line = dir.x*horizontal_checkpoint_y_dist/dir.y + other_x;
 	
-	if (abs(x_shared_line - horizontal_checkpoint_x) + abs(x_horizontal_check_line - horizontal_checkpoint_x) <= abs(x_shared_line - x_horizontal_check_line) + 0.01){
+	if (abs(x_shared_line - horizontal_checkpoint_x) + abs(x_horizontal_check_line - horizontal_checkpoint_x) <= abs(x_shared_line - x_horizontal_check_line) + EPSILON){
 		col.side = exit_horizontal_side;
 		col.side_orientation = "horizontal";
 		col.dist = -horizontal_checkpoint_y_dist/dir.y;
@@ -185,42 +253,95 @@ Game.prototype._circle_rectangle_collision = function (c, r, dir){
 
 };
 
-// collision information with moving circle and a circle
-Game.prototype._circle_circle_collision = function (c1, c2, dir){
-	const sq_dist = (c1.x-c2.x)*(c1.x-c2.x) + (c1.y-c2.y)*(c1.y-c2.y);
-	const col = {collision:sq_dist < (c1.r + c2.r)*(c1.r + c2.r)};
-	col.type = "moving circle - circle";
+// collision information with a moving rotated rectangle and a circle
+// transform to a regular rectangle and a moving circle
+// WARNING: only works if rectangle is larger than circle
+
+// r = {center_x:<center x>, center_y:<center y>, length:<length>, width:<width>, angle: <angle of rotation>};
+// c = {x:<center x>, y:<center y>, r:<radius>};
+// dir = {x:<x component>, y:<y component>}; <-- normalized
+Game.prototype._rot_rectangle_circle_collision = function (r, c, dir){
+	// TODO
+	const rel_c_x = c.x - r.center_x;
+	const rel_c_y = c.y - r.center_y;
+
+	const transformed_c_x = cos(r.angle)*rel_c_x + sin(r.angle)*rel_c_y;
+	const transformed_c_y = -sin(r.angle)*rel_c_x + cos(r.angle)*rel_c_y;
+	const transformed_dir = {
+		x: -(cos(r.angle)*dir.x + sin(r.angle)*dir.y),
+		y: -(-sin(r.angle)*dir.x + cos(r.angle)*dir.y)
+	};
+
+	const transformed_rect = {x:-r.length/2, y:-r.width/2, width:r.length, height:r.width};
+	const transformed_circle = {x:transformed_c_x, y:transformed_c_y, r:c.r};
+
+	const transformed_col = this._circle_rectangle_collision(transformed_circle, transformed_rect, transformed_dir);
+
+	const col = {};
+	col.type = "moving rotated rectangle - circle";
+	col.collision = transformed_col.collision;
 	if (col.collision){
-		const dist_center_x = c1.x - c2.x;
-		const dist_center_y = c1.y - c2.y;
-
-		// find dist
-		const b = dist_center_x*dir.x + dist_center_y*dir.y;
-		const c = sq_dist - (c1.r + c2.r)*(c1.r + c2.r);
-
-		const disc = sqrt(b*b - c);
-
-		const sol1 = -b + disc;
-		const sol2 = -b - disc;
-
-		if (sol1 > 0){
-			col.dist = sol2;
-		} else if (sol2 > 0){
-			col.dist = sol1;
-		} else {
-			col.dist = max(sol1, sol2);
-		}
-
-		// find unit normal
-		col.normal = {x: dist_center_x + col.dist*dir.x, y:dist_center_y + col.dist*dir.y};
-		const mag_mult = 1/sqrt(col.normal.x*col.normal.x + col.normal.y*col.normal.y);
-		col.normal.x *= mag_mult;
-		col.normal.y *= mag_mult;
-
+		col.dist = transformed_col.dist;
 	}
+	console.log(transformed_col);
+	// TODO here
+	// TODO
+	// TODO
+	// don't need to return what side it contacts
+	// need to find what point on the circle it contacts (and more importantly the tangent line)
+	// this tangent line will be used to figure out movement of the rectangle after collision
+	// this might only need to be done if a corner contacts????? so maybe do return if it is "right" or "corner"
+	// reverse engineer the quadratic in the other method to find the point of corner contact
+		// if you really need to just look at which point is closest to the center of the circle...top right or bottom right
+	// the amount the rectangle moves after the collision should be projection of direction onto tangent vector
+		// move a small step this amount (1/2 of time left???) (taking off time of the frame)
+		// move more in direction
+		// repeat
 
 
 	return col;
+};
+
+
+
+
+// collision information with moving 1d interval and a 1d interval
+// for use in SAT
+
+// i1 = {start:<min of interval>, end:<max of interval>};
+// i1 = {start:<min of interval>, end:<max of interval>};
+// dir = <component of direction projected onto interval>;
+Game.prototype._interval_interval_collision = function (i1, i2, dir){
+	let col = {};
+	col.type = "moving interval - interval";
+
+	const first = i1.start<i2.start ? i1 : i2;
+	const second = first===i1 ? i2 : i1;
+
+	col.collision = first.end > second.start + EPSILON;
+
+	if (col.collision){
+		if (abs(dir)<EPSILON){
+			col.dist = Infinity;
+		} else if (dir > 0){
+			col.dist = (i1.end - i2.start)/(-dir);
+		} else {
+			col.dist = (i2.end - i1.start)/dir;
+		}
+	}
+
+	return col;
+};
+
+
+// collision information with a moving rotated rectangle and a rectangle
+// uses SAT
+
+// r1 = {center_x:<center x>, center_y:<center y>, length:<length>, width:<width>, angle:<angle of rotation>};
+// r2 = {x:<top-left x>, y:<top-left y>, width:<width>, height:<height>};
+// dir = {x:<x component>, y:<y component>}; <-- normalized
+Game.prototype._rot_rectangle_rectangle_collision = function (r1, r2, dir){
+	// TODO
 };
 
 
@@ -263,7 +384,7 @@ Game.prototype._find_maze_bullet_collisions = function (bullet){
 	const bounding_box = {x:bullet.pos.x-bullet.r, y:bullet.pos.y-bullet.r, width:bullet.r*2, height:bullet.r*2};
 
 	// find the shapes that need to be checked for collisions
-	const shapes_to_check = this._rect_possible_intersect_shapes(bounding_box);
+	const shapes_to_check = this.maze.rect_possible_intersect_shapes(bounding_box);
 
 	const bullet_shape = {x:bullet.pos.x, y:bullet.pos.y, r:bullet.r};
 
@@ -299,4 +420,43 @@ Game.prototype._handle_bullet_collision_circle = function (bullet, col){
 	bullet.dir.x = bullet.dir.x - 2*col.normal.x*normal_dot_dir;
 	bullet.dir.y = bullet.dir.y - 2*col.normal.y*normal_dot_dir;
 
+};
+
+
+
+/*
+Collision between maze and player
+*/
+Game.prototype._handle_maze_player_collisions = function (player){
+	// repeat a max of five times
+	// if resolving a collision creates another collision, just hope it doesn't do
+	// it more than five time
+
+	// this is how it worked for bullets
+	/*
+	for (let i=0; i<5; i++){
+		
+		let collisions = this._find_maze_bullet_collisions(bullet);
+		
+		// if there are no collisions, we are done
+		if (collisions.length == 0){
+			return;
+		}
+		
+		// rewind reality to the point before the collision
+		const time = collisions[0].dist / bullet.speed;
+		bullet.update_pos(time);
+
+		if (collisions[0].type == "moving circle - circle"){
+			this._handle_bullet_collision_circle(bullet, collisions[0]);
+		} else {
+			this._handle_bullet_collision_rect(bullet, collisions[0]);
+		}
+
+		// move time back forward
+		bullet.update_pos(-time);
+		
+	}
+	*/
+	
 };

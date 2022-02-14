@@ -49,12 +49,12 @@ function Maze(){
 	let prev_shapes = {};
 	for (let i=0; i<this.size; i++){
 		for (let j=0; j<this.size; j++){
-			for (let dir in DIR_LOOKUP){
+			for (const dir in DIR_LOOKUP){
 				if (!this.cells[i][j][dir]){
 					continue;
 				}
 				let shapes_in_wall = this._get_wall_shapes(i, j, dir);
-				for (let shape of shapes_in_wall){
+				for (const shape of shapes_in_wall){
 					// if two shapes are the same, use the same one everywhere
 					// should allow === checks between shapes
 					if (!prev_shapes.hasOwnProperty(shape.id)){
@@ -98,7 +98,7 @@ Maze.prototype._traverse = function (start_row, start_col){
 Maze.prototype._random_neighbor = function (row, col){
 	let neighbors = [];
 
-	for (let dir in DIR_LOOKUP){
+	for (const dir in DIR_LOOKUP){
 		const d = DIR_LOOKUP[dir];
 		if (row+d.dr>=0 && row+d.dr<this.size && col+d.dc>=0 && col+d.dc<this.size){
 			if (!this.cells[row+d.dr][col+d.dc].visited){
@@ -158,7 +158,7 @@ Maze.prototype.get_cell = function (x, y){
 }
 
 
-Maze.prototype.get_shapes_in_block = function (min_row, min_col, max_row, max_col){
+Maze.prototype._get_shapes_in_block = function (min_row, min_col, max_row, max_col){
 	let shapes = [];
 	let prev_shapes = {};
 	for (let i=max(min_row,0); i<=min(max_row,this.size-1); i++){
@@ -172,6 +172,15 @@ Maze.prototype.get_shapes_in_block = function (min_row, min_col, max_row, max_co
 		}
 	}
 	return shapes;
+};
+
+// get an array of all shapes in the maze a rectangle could possibly be touching
+// also works for a circle (using a bounding box)
+Maze.prototype.rect_possible_intersect_shapes = function (rectangle){
+	const min_cell = this.get_cell(rectangle.x - this.wall_width/2, rectangle.y - this.wall_width/2);
+	const max_cell = this.get_cell(rectangle.x + rectangle.width + this.wall_width/2, rectangle.y + rectangle.height + this.wall_width/2);
+
+	return this._get_shapes_in_block(min_cell.row, min_cell.col, max_cell.row, max_cell.col);
 };
 
 // a wall is made up of a rectangle with two circles on the ends

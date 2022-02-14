@@ -2,8 +2,8 @@ function Player(pos, angle, color, input_getter){
 	this.pos = pos; // center
 	this.angle = angle;
 
+	this.length = 56;
 	this.width = 42;
-	this.height = 56;
 
 	this.turn_speed = 0.07;
 	this.forward_speed = 3;
@@ -22,9 +22,9 @@ Player.prototype.draw = function (){
 	stroke(0);
 	strokeWeight(1);
 	fill(this.color);
-	rect(-this.height/2, -this.width/2, this.height, this.width);
+	rect(-this.length/2, -this.width/2, this.length, this.width);
 	ellipse(0,0,this.width*3/4,this.width*3/4);
-	rect(0, -this.width/6, this.height/2+this.height*0.1, this.width/3);
+	rect(0, -this.width/6, this.length/2+this.length*0.1, this.width/3);
 
 	resetMatrix();
 	scale(width/WIDTH);
@@ -47,6 +47,13 @@ Player.prototype.move = function (forward){
 		this.pos.y -= this.back_speed*sin(this.angle);
 	}
 };
+
+Player.prototype.create_bullet = function (speed=5, r=6, life=1800){
+	const dist = this.length/2 + r;
+	const pos = {x:this.pos.x + cos(this.angle)*dist, y:this.pos.y + sin(this.angle)*dist};
+
+	return new Bullet(pos, this.angle, speed, r, life);
+}
 
 // input should be something like {left:false, right:false, forward:false, back:false, shoot:false}
 // return false for no bullet or true for a bullet
