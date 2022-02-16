@@ -233,13 +233,12 @@ function rot_rectangle_circle_collision(r, c, dir){
 
 
 
-// collision information with moving 1d interval and a 1d interval
+// collision information with 1d interval and a 1d interval
 // for use in SAT
 
+// i1 = {start:<min of interval>, end:<max of interval>}; <-- this will be moved to resolve collision
 // i1 = {start:<min of interval>, end:<max of interval>};
-// i1 = {start:<min of interval>, end:<max of interval>};
-// dir = <component of direction projected onto interval>;
-function interval_interval_collision(i1, i2, dir){
+function interval_interval_collision(i1, i2){
 	const col = {};
 	col.type = "moving interval - interval";
 
@@ -249,12 +248,10 @@ function interval_interval_collision(i1, i2, dir){
 	col.collision = first.end > second.start + EPSILON;
 
 	if (col.collision){
-		if (abs(dir)<EPSILON){
-			col.dist = -Infinity;
-		} else if (dir > 0){
-			col.dist = (i1.end - i2.start)/(-dir);
-		} else {
-			col.dist = (i2.end - i1.start)/dir;
+		const pos_dist = i2.end - i1.start;
+		const neg_dist = i1.end - i2.start;
+		if (pos_dist < neg_dist){
+			
 		}
 	}
 
