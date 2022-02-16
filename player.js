@@ -14,6 +14,8 @@ function Player(pos, angle, color, input_getter){
 	this.input_getter = input_getter;
 
 	this._already_shot = false;
+	this._last_move = null;
+	this._last_turn = null;
 }
 
 Player.prototype.draw = function (){
@@ -33,8 +35,10 @@ Player.prototype.draw = function (){
 Player.prototype.turn = function (left){
 	if (left){
 		this.angle -= this.turn_speed;
+		this._last_turn = "left";
 	} else {
 		this.angle += this.turn_speed;
+		this._last_turn = "right";
 	}
 };
 
@@ -42,9 +46,11 @@ Player.prototype.move = function (forward){
 	if (forward){
 		this.pos.x += this.forward_speed*cos(this.angle);
 		this.pos.y += this.forward_speed*sin(this.angle);
+		this._last_move = "forward";
 	} else {
 		this.pos.x -= this.back_speed*cos(this.angle);
 		this.pos.y -= this.back_speed*sin(this.angle);
+		this._last_move = "back";
 	}
 };
 
@@ -58,6 +64,9 @@ Player.prototype.create_bullet = function (speed=5, r=6, life=1800){
 // input should be something like {left:false, right:false, forward:false, back:false, shoot:false}
 // return false for no bullet or true for a bullet
 Player.prototype.handle_input = function() {
+	this._last_move = null;
+	this._last_turn = null;
+
 	const input = this.input_getter();
 	if (input.left && !input.right){
 		this.turn(left=true);

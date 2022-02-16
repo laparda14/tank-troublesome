@@ -39,18 +39,18 @@ function draw_rot_rect(r){
 	resetMatrix();
 }
 
+angle = 1;
 function draw(){
-	//scale(width/WIDTH);
-	background(230);
+	/*background(230);
 	
-	angle = 1;
+	
 	dir = {x:cos(angle), y:sin(angle)};
 
 	// moving rect
 	shape1 = {center_x:mouseX, center_y:mouseY, length:200, width:100, angle:angle};
 
-	// circle
-	shape2 = {x:200, y:200, r:20};
+	// rect
+	shape2 = {x:100, y:150, width:150, height:50};
 
 	stroke(0);
 	strokeWeight(2);
@@ -61,10 +61,10 @@ function draw(){
 	draw_rot_rect(shape1);
 
 	fill(0,0,255)
-	ellipse(shape2.x, shape2.y, shape2.r*2, shape2.r*2);
+	rect(shape2.x, shape2.y, shape2.width, shape2.height);
 
+	collision = rot_rectangle_rectangle_collision(shape1, shape2, dir);
 	
-	collision = rot_rectangle_circle_collision(shape1, shape2, dir);
 	if (frameCount % 60 == 0){
 		console.log(collision);
 	}
@@ -74,13 +74,16 @@ function draw(){
 		shape1.center_y += collision.dist*dir.y;
 		draw_rot_rect(shape1);
 
-	}
+	}*/
 	
-
-	/*if (!debug){
+	
+	
+	scale(width/WIDTH);
+	background(230);
+	if (!debug){
 		game.update();
 	}
-	game.draw();*/
+	game.draw();
 	
 
 }
@@ -90,4 +93,5 @@ function keyPressed(){
 	if (key == "c"){
 		game.bullets = [];
 	}
+	angle += 0.1;
 }

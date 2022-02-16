@@ -49,7 +49,7 @@ function circle_circle_collision (c1, c2, dir){
 // y0 = <origin of line y>
 // dir = {x:<x component>, y:<y component>}; <-- direction of line, normalized
 // circle = {x:<center x>, y:<center y>, r:<radius>};
-function line_circle_intersect (x0, y0, dir, circle){
+function _line_circle_intersect (x0, y0, dir, circle){
 	const d_x = x0 - circle.x;
 	const d_y = y0 - circle.y;
 	
@@ -147,7 +147,7 @@ function circle_rectangle_collision(c, r, dir){
 	
 	
 	// there are three possible corners, try (vertial_x, horizontal_y) first
-	const corner_shared_intersects = line_circle_intersect(vertical_x, horizontal_y, dir, c);
+	const corner_shared_intersects = _line_circle_intersect(vertical_x, horizontal_y, dir, c);
 	if (corner_shared_intersects[0] >= 0 || corner_shared_intersects[1] >= 0){
     	col.dist = corner_shared_intersects[0]>corner_shared_intersects[1]?-corner_shared_intersects[0]:-corner_shared_intersects[1];
 
@@ -158,7 +158,7 @@ function circle_rectangle_collision(c, r, dir){
 	}
 	
 	// then (vertical_x, other_y) and (other_x, horizontal_y)
-	const corner_vertical_intersects = line_circle_intersect(vertical_x, other_y, dir, c);
+	const corner_vertical_intersects = _line_circle_intersect(vertical_x, other_y, dir, c);
 	if (corner_vertical_intersects[0] >= 0 || corner_vertical_intersects[1] >= 0){
     	col.dist = corner_vertical_intersects[0]>corner_vertical_intersects[1]?-corner_vertical_intersects[0]:-corner_vertical_intersects[1];
 
@@ -169,7 +169,7 @@ function circle_rectangle_collision(c, r, dir){
 	}
 	
 	// then (vertical_x, other_y) and (other_x, horizontal_y)
-	const corner_horizontal_intersects = line_circle_intersect(other_x, horizontal_y, dir, c);
+	const corner_horizontal_intersects = _line_circle_intersect(other_x, horizontal_y, dir, c);
 	if (corner_horizontal_intersects[0] >= 0 || corner_horizontal_intersects[1] >= 0){
     	col.dist = corner_horizontal_intersects[0]>corner_horizontal_intersects[1]?-corner_horizontal_intersects[0]:-corner_horizontal_intersects[1];
     	
@@ -240,7 +240,7 @@ function rot_rectangle_circle_collision(r, c, dir){
 // i1 = {start:<min of interval>, end:<max of interval>};
 // dir = <component of direction projected onto interval>;
 function interval_interval_collision(i1, i2, dir){
-	let col = {};
+	const col = {};
 	col.type = "moving interval - interval";
 
 	const first = i1.start<i2.start ? i1 : i2;
@@ -250,7 +250,7 @@ function interval_interval_collision(i1, i2, dir){
 
 	if (col.collision){
 		if (abs(dir)<EPSILON){
-			col.dist = Infinity;
+			col.dist = -Infinity;
 		} else if (dir > 0){
 			col.dist = (i1.end - i2.start)/(-dir);
 		} else {
@@ -261,6 +261,14 @@ function interval_interval_collision(i1, i2, dir){
 	return col;
 }
 
+// project a set of points to an interval (the points are the vertices of a convex polygon)
+
+// points = [{x:<x pos>, y:<y:pos>}, {x:<x pos>, y:<y:pos>}, ...];
+// vector = {x:<x component>, y:<y component>}; <-- normalized
+function _project_to_interval(points, vector){
+	const interval_pos = points.map(p=>p.x*vector.x + p.y*vector.y);
+	return {start:min(interval_pos), end:max(interval_pos)};
+}
 
 // collision information with a moving rotated rectangle and a rectangle
 // uses SAT
@@ -269,5 +277,47 @@ function interval_interval_collision(i1, i2, dir){
 // r2 = {x:<top-left x>, y:<top-left y>, width:<width>, height:<height>};
 // dir = {x:<x component>, y:<y component>}; <-- normalized
 function rot_rectangle_rectangle_collision(r1, r2, dir){
-	// TODO
+	const col = {};
+	col.type = "moving rotated rectangle - rectangle";
+
+	const r1_points = [
+		{x: r1.center_x + cos(r1.angle)*r1.length/2 - sin(r1.angle)*r1.width/2, y: r1.center_y + sin(r1.angle)*r1.length/2 + cos(r1.angle)*r1.width/2},
+		{x: r1.center_x + cos(r1.angle)*r1.length/2 + sin(r1.angle)*r1.width/2, y: r1.center_y + sin(r1.angle)*r1.length/2 - cos(r1.angle)*r1.width/2},
+		{x: r1.center_x - cos(r1.angle)*r1.length/2 - sin(r1.angle)*r1.width/2, y: r1.center_y - sin(r1.angle)*r1.length/2 + cos(r1.angle)*r1.width/2},
+		{x: r1.center_x - cos(r1.angle)*r1.length/2 + sin(r1.angle)*r1.width/2, y: r1.center_y - sin(r1.angle)*r1.length/2 - cos(r1.angle)*r1.width/2}
+	];
+
+	const r2_points = [
+		{x: r2.x, y:r2.y},
+		{x: r2.x + r2.width, y:r2.y},
+		{x: r2.x, y:r2.y + r2.height},
+		{x: r2.x + r2.width, y:r2.y + r2.height}
+	];
+
+	// each axis the shapes need to be projected onto
+	const vectors = [
+		{x: 1, y: 0},
+		{x: 0, y: 1},
+		{x: cos(r1.angle), y: sin(r1.angle)},
+		{x: -sin(r1.angle), y: cos(r1.angle)}
+	];
+
+	const intervals = vectors.map(v=>({r1_interval:_project_to_interval(r1_points, v), r2_interval:_project_to_interval(r2_points, v), interval1_dir:dir.x*v.x + dir.y*v.y}));
+	const collisions = intervals.map(ivs=>interval_interval_collision(ivs.r1_interval, ivs.r2_interval, ivs.interval1_dir));
+
+	let best_dist = -Infinity;
+	for (const c of collisions){
+		if (c.collision){
+			if (c.dist > best_dist){
+				best_dist = c.dist;
+			}
+		} else {
+			col.collision = false;
+			return col;
+		}
+	}
+	col.collision = true;
+	col.dist = best_dist;
+
+	return col;
 }

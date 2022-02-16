@@ -18,7 +18,9 @@ Game.prototype.update = function(){
 	}
 
 	// player wall collisions
-	// TODO TODO
+	for (const p of this.players){
+		this._handle_maze_player_collisions(p);
+	}
 
 	// move bullets
 	// bullet maze collisions
@@ -94,14 +96,16 @@ Game.prototype._handle_maze_bullet_collisions = function (bullet){
 			return;
 		}
 		
+		const furthest_collision = collisions.reduce((a,b)=>a.dist<b.dist?a:b);
+
 		// rewind reality to the point before the collision
-		const time = collisions[0].dist / bullet.speed;
+		const time = furthest_collision.dist / bullet.speed;
 		bullet.update_pos(time);
 
-		if (collisions[0].type == "moving circle - circle"){
-			this._handle_bullet_collision_circle(bullet, collisions[0]);
+		if (furthest_collision.type == "moving circle - circle"){
+			this._handle_bullet_collision_circle(bullet, furthest_collision);
 		} else {
-			this._handle_bullet_collision_rect(bullet, collisions[0]);
+			this._handle_bullet_collision_rect(bullet, furthest_collision);
 		}
 
 		// move time back forward
@@ -123,9 +127,6 @@ Game.prototype._find_maze_bullet_collisions = function (bullet){
 	// check collision on each of the shapes
 	let collisions = shapes_to_check.map(s=>s.type=="rectangle"?circle_rectangle_collision(bullet_shape, s, bullet.dir):circle_circle_collision(bullet_shape, s, bullet.dir));
 	collisions = collisions.filter(c=>c.collision);
-
-
-	collisions.sort((x,y)=>x.dist-y.dist);
 	
 	return collisions;
 
@@ -164,11 +165,47 @@ Game.prototype._handle_maze_player_collisions = function (player){
 	// if resolving a collision creates another collision, just hope it doesn't do
 	// it more than five time
 
+	let collisions = this._find_maze_player_collisions(player);
+	if (collisions.length == 0){
+		return;
+	}
+
+	// turning was making it very buggy
+	// if the player turned in the last move, undo it and restart the collision handling
+	if (player._last_turn != null){
+		if (player._last_turn == "left"){
+			player.turn(left=false);
+		} else if (player._last_turn == "right") {
+			player.turn(left=true);
+		}
+		player._last_turn = null;
+		this._handle_maze_player_collisions(player);
+		return;
+	}
+
+	// at this point, we can assume there was only foward and backward motion
+	
+	const furthest_collision = collisions.reduce((a,b)=>a.dist<b.dist?a:b);
+
+	// rewind reality to the point before the collision
+	const dist = furthest_collision.dist;
+	if (player._last_move == "forward"){
+		player.pos.x += dist*cos(player.angle);
+		player.pos.y += dist*sin(player.angle);
+	} else {
+		player.pos.x -= dist*cos(player.angle);
+		player.pos.y -= dist*sin(player.angle);
+	}
+	
+	
+
+
 	// this is how it worked for bullets
+	
 	/*
 	for (let i=0; i<5; i++){
-		
-		let collisions = this._find_maze_bullet_collisions(bullet);
+
+		let collisions = this._find_maze_player_collisions(player);
 		
 		// if there are no collisions, we are done
 		if (collisions.length == 0){
@@ -191,4 +228,36 @@ Game.prototype._handle_maze_player_collisions = function (player){
 	}
 	*/
 	
+	
+};
+
+Game.prototype._find_maze_player_collisions = function (player){
+
+	// find the walls that need to be checked for collisions
+	const player_points = [
+		{x: player.pos.x + cos(player.angle)*player.length/2 - sin(player.angle)*player.width/2, y: player.pos.y + sin(player.angle)*player.length/2 + cos(player.angle)*player.width/2},
+		{x: player.pos.x + cos(player.angle)*player.length/2 + sin(player.angle)*player.width/2, y: player.pos.y + sin(player.angle)*player.length/2 - cos(player.angle)*player.width/2},
+		{x: player.pos.x - cos(player.angle)*player.length/2 - sin(player.angle)*player.width/2, y: player.pos.y - sin(player.angle)*player.length/2 + cos(player.angle)*player.width/2},
+		{x: player.pos.x - cos(player.angle)*player.length/2 + sin(player.angle)*player.width/2, y: player.pos.y - sin(player.angle)*player.length/2 - cos(player.angle)*player.width/2}
+	];
+	const x_interval = _project_to_interval(player_points, {x:1,y:0});
+	const y_interval = _project_to_interval(player_points, {x:0,y:1});
+	const bounding_box = {x:x_interval.start, y:y_interval.start, width:x_interval.end-x_interval.start, height:y_interval.end-y_interval.start};
+
+	// find the shapes that need to be checked for collisions
+	const shapes_to_check = this.maze.rect_possible_intersect_shapes(bounding_box);
+
+	const player_shape = {center_x: player.pos.x, center_y: player.pos.y, length: player.length, width: player.width, angle: player.angle};
+	const player_dir = {x:cos(player.angle), y:sin(player.angle)};
+	if (player._last_move == "back"){
+		player_dir.x *= -1;
+		player_dir.y *= -1;
+	}
+	
+	// check collision on each of the shapes
+	let collisions = shapes_to_check.map(s=>s.type=="rectangle"?rot_rectangle_rectangle_collision(player_shape, s, player_dir):rot_rectangle_circle_collision(player_shape, s, player_dir));
+	collisions = collisions.filter(c=>c.collision);
+	
+	return collisions;
+
 };
