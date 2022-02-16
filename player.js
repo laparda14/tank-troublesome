@@ -68,16 +68,17 @@ Player.prototype.handle_input = function() {
 	this._last_turn = null;
 
 	const input = this.input_getter();
-	if (input.left && !input.right){
-		this.turn(left=true);
-	} else if (!input.left && input.right){
-		this.turn(left=false);
-	}
 
 	if (input.forward && !input.back){
 		this.move(forward=true);
 	} else if (!input.forward && input.back){
 		this.move(forward=false);
+	}
+
+	if (input.left && !input.right){
+		this.turn(left=true);
+	} else if (!input.left && input.right){
+		this.turn(left=false);
 	}
 
 	if (input.shoot){
