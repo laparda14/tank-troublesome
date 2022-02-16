@@ -64,8 +64,10 @@ function draw(){
 	ellipse(shape2.x, shape2.y, shape2.r*2, shape2.r*2);
 
 	
-	collision = game._rot_rectangle_circle_collision(shape1, shape2, dir);
-	console.log(collision);
+	collision = rot_rectangle_circle_collision(shape1, shape2, dir);
+	if (frameCount % 60 == 0){
+		console.log(collision);
+	}
 	if (collision.collision){
 		fill(0,205,0);
 		shape1.center_x += collision.dist*dir.x;
