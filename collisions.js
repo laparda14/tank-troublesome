@@ -279,13 +279,9 @@ function rot_rectangle_circle_collision(r, c){
 
 			const collision = interval_interval_collision(r_interval, c_interval);
 
-			if (collision.collision){
-				if (abs(collision.dist) < abs(best_collision.dist)){
-					best_collision = collision;
-					best_axis = vector;
-				}
-			} else {
-				alert("UH OH");
+			if (abs(collision.dist) < abs(best_collision.dist)){
+				best_collision = collision;
+				best_axis = vector;
 			}
 
 		}
