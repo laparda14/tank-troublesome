@@ -7,8 +7,8 @@ function Maze(){
 	this.size = 9;
 
 	// size (in pixels) of each section
-	// the game is a square of size width x width
-	this.section_size = WIDTH/this.size;
+	// the game is a square of size 100 x 100
+	this.section_size = 100;
 
 	this.wall_width = 6;
 
@@ -26,7 +26,7 @@ function Maze(){
 	this._traverse(0,0);
 
 	// remove random walls to create possible loops
-	for (let i=0; i<10; i++){
+	for (let i=0; i<this.size*this.size/9; i++){
 		const row = floor(random()*(this.size-2)) + 1;
 		const col = floor(random()*(this.size-2)) + 1;
 		const dir = Object.keys(DIR_LOOKUP)[floor(random()*4)];
@@ -56,7 +56,7 @@ function Maze(){
 				let shapes_in_wall = this._get_wall_shapes(i, j, dir);
 				for (const shape of shapes_in_wall){
 					// if two shapes are the same, use the same one everywhere
-					// should allow === checks between shapes
+					// allows === checks between shapes in the maze
 					if (!prev_shapes.hasOwnProperty(shape.id)){
 						prev_shapes[shape.id] = shape;
 					}
@@ -80,9 +80,10 @@ Maze.prototype._traverse = function (start_row, start_col){
 		const neighbor = this._random_neighbor(pos.row, pos.col);
 
 		if (neighbor===null){
+			// backtrack if there are no unvisited neighbors
 			stack.pop();
 		} else {
-
+			// set neighbor to visited and knock down walls
 			this.cells[neighbor.row][neighbor.col].visited = true;
 
 			this.cells[pos.row][pos.col][neighbor.dir] = false;
@@ -98,6 +99,7 @@ Maze.prototype._traverse = function (start_row, start_col){
 Maze.prototype._random_neighbor = function (row, col){
 	let neighbors = [];
 
+	// make list of possible unvisited neighbors
 	for (const dir in DIR_LOOKUP){
 		const d = DIR_LOOKUP[dir];
 		if (row+d.dr>=0 && row+d.dr<this.size && col+d.dc>=0 && col+d.dc<this.size){
@@ -111,6 +113,7 @@ Maze.prototype._random_neighbor = function (row, col){
 		return null;
 	}
 
+	// return a random neighbor from list of possibilities
 	return neighbors[floor(random()*neighbors.length)];
 
 };
@@ -153,11 +156,13 @@ Maze.prototype.draw = function (){
 	line(0,HEIGHT,WIDTH,HEIGHT);
 };
 
+// get the cell that contains the position (x, y)
 Maze.prototype.get_cell = function (x, y){
 	return {row:floor(y/this.section_size), col:floor(x/this.section_size)};
 }
 
 
+// get a list of all possible shapes in a block of cells
 Maze.prototype._get_shapes_in_block = function (min_row, min_col, max_row, max_col){
 	let shapes = [];
 	let prev_shapes = {};
@@ -215,11 +220,15 @@ Maze.prototype._get_wall_shapes = function (row, col, dir){
 		}
 	];
 
-	shapes.map(x=>{x.id = this._get_shape_id(x)});
+	// assign ids to all shapes
+	for (const s of shapes){
+		s.id = this._get_shape_id(s);
+	}
 
 	return shapes;
 };
 
+// generate an id for a given shape
 Maze.prototype._get_shape_id = function (shape){
 	if (shape.type=="rectangle"){
 		return "rectangle " + floor(shape.x) + " " + floor(shape.y) + " " + floor(shape.width) + " " + floor(shape.height);

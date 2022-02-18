@@ -1,7 +1,3 @@
-// TODO clean up comments
-
-const EPSILON = 0.01;
-
 function Game(){
 	this.maze = new Maze();
 	this.bullets = [];
@@ -82,6 +78,7 @@ Game.prototype.draw = function(){
 /*
 Collision between maze and bullets
 */
+
 
 Game.prototype._handle_maze_bullet_collisions = function (bullet){
 	// repeat a max of five times
@@ -170,7 +167,7 @@ Game.prototype._handle_maze_player_collisions = function (player){
 		if (collisions.length == 0){
 			return;
 		}
-	
+
 		let best_collision = {dist:Infinity}
 		for (const c of collisions){
 			// prioritize rectangle collisions over circle collisions

@@ -1,3 +1,6 @@
+// small positive value used to avoid floating point error
+const EPSILON = 0.01;
+
 /*
 Generic collision checks
 */
@@ -106,7 +109,7 @@ function circle_rectangle_collision(c, r, dir){
 	const vertical_checkpoint_x = exit_vertical_side=="left" ? c.x + c.r : c.x - c.r;
 	const vertical_checkpoint_y = c.y;
 
-	// find how far vertical_checkpoint_x is away from vertical_x (abs?)
+	// find how far vertical_checkpoint_x is away from vertical_x
 	const vertical_checkpoint_x_dist = vertical_checkpoint_x - vertical_x;
 	
 	// calculate y value for lines starting at (vertical_x, horizontal_y) and (vertical_x, other_y)
@@ -122,8 +125,7 @@ function circle_rectangle_collision(c, r, dir){
 		return col;
 	}
 
-	// if not, do the same for horizontal
-	// but flip x and y
+	// do the same for horizontal but flip x and y
 	
 	const horizontal_checkpoint_x = c.x;
 	const horizontal_checkpoint_y = exit_horizontal_side=="top" ? c.y + c.r : c.y - c.r;
@@ -142,9 +144,6 @@ function circle_rectangle_collision(c, r, dir){
 
 	// if it still isn't inside, it in the corner
 	col.side = "corner";
-	
-	// you need to know if lines intersect circles
-	
 	
 	// there are three possible corners, try (vertial_x, horizontal_y) first
 	const corner_shared_intersects = _line_circle_intersect(vertical_x, horizontal_y, dir, c);
@@ -180,10 +179,6 @@ function circle_rectangle_collision(c, r, dir){
 	}
 	
 	alert("UH OH");
-
-	// the point of intersection is the last point that will be in the rectangle
-	// the distance from the corner to that point is the distance
-
 }
 
 

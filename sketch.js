@@ -1,3 +1,5 @@
+let canvas;
+
 let WIDTH, HEIGHT;
 
 let game;
@@ -9,7 +11,7 @@ function mouseCoords(){
 }
 
 function setup(){
-	const canvas = createCanvas(windowHeight*0.9,windowHeight*0.9);
+	canvas = createCanvas(windowHeight*0.9,windowHeight*0.9);
 	canvas.parent("sketch");
 
 	WIDTH = 900;
@@ -19,10 +21,10 @@ function setup(){
 
 	game = new Game();
 	game.players.push(
-		new Player({x:250,y:650}, 0, color(255,0,0), createPlayerArrowKeysInput("M"))
+		new Player({x:250,y:650}, 0, color(0,255,0), createPlayerArrowKeysInput("M"))
 	);
 	game.players.push(
-		new Player({x:550, y:150}, 0, color(0,255,0), createPlayerKeyboardInput("SFEDQ"))
+		new Player({x:550, y:150}, 0, color(255,0,0), createPlayerKeyboardInput("SFEDQ"))
 	);
 
 	canvas.style("border", floor(game.maze.wall_width/2*width/WIDTH) + "px solid black");
