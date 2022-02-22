@@ -2,8 +2,8 @@ function Player(pos, angle, color, input_getter){
 	this.pos = pos; // center
 	this.angle = angle;
 
+	this.length = 56;
 	this.width = 42;
-	this.height = 56;
 
 	this.turn_speed = 0.07;
 	this.forward_speed = 3;
@@ -14,27 +14,34 @@ function Player(pos, angle, color, input_getter){
 	this.input_getter = input_getter;
 
 	this._already_shot = false;
+	this._last_move = null;
+	this._last_turn = null;
 }
 
 Player.prototype.draw = function (){
+	push();
+
 	translate(this.pos.x, this.pos.y);
 	rotate(this.angle);
 	stroke(0);
 	strokeWeight(1);
 	fill(this.color);
-	rect(-this.height/2, -this.width/2, this.height, this.width);
+	rect(-this.length/2, -this.width/2, this.length, this.width);
 	ellipse(0,0,this.width*3/4,this.width*3/4);
-	rect(0, -this.width/6, this.height/2+this.height*0.1, this.width/3);
-
-	resetMatrix();
-	scale(width/WIDTH);
+	rect(0, -this.width/6, this.length/2+this.length*0.1, this.width/3);
+	
+	pop();
+	//resetMatrix();
+	//scale(width/WIDTH);
 };
 
 Player.prototype.turn = function (left){
 	if (left){
 		this.angle -= this.turn_speed;
+		this._last_turn = "left";
 	} else {
 		this.angle += this.turn_speed;
+		this._last_turn = "right";
 	}
 };
 
@@ -42,26 +49,39 @@ Player.prototype.move = function (forward){
 	if (forward){
 		this.pos.x += this.forward_speed*cos(this.angle);
 		this.pos.y += this.forward_speed*sin(this.angle);
+		this._last_move = "forward";
 	} else {
 		this.pos.x -= this.back_speed*cos(this.angle);
 		this.pos.y -= this.back_speed*sin(this.angle);
+		this._last_move = "back";
 	}
 };
+
+Player.prototype.create_bullet = function (speed=5, r=6, life=1200){
+	const dist = this.length/2 + r;
+	const pos = {x:this.pos.x + cos(this.angle)*dist, y:this.pos.y + sin(this.angle)*dist};
+
+	return new Bullet(pos, this.angle, speed, r, life);
+}
 
 // input should be something like {left:false, right:false, forward:false, back:false, shoot:false}
 // return false for no bullet or true for a bullet
 Player.prototype.handle_input = function() {
+	this._last_move = null;
+	this._last_turn = null;
+
 	const input = this.input_getter();
-	if (input.left && !input.right){
-		this.turn(left=true);
-	} else if (!input.left && input.right){
-		this.turn(left=false);
-	}
 
 	if (input.forward && !input.back){
 		this.move(forward=true);
 	} else if (!input.forward && input.back){
 		this.move(forward=false);
+	}
+
+	if (input.left && !input.right){
+		this.turn(left=true);
+	} else if (!input.left && input.right){
+		this.turn(left=false);
 	}
 
 	if (input.shoot){

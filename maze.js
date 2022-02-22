@@ -7,8 +7,8 @@ function Maze(){
 	this.size = 9;
 
 	// size (in pixels) of each section
-	// the game is a square of size width x width
-	this.section_size = WIDTH/this.size;
+	// the game is a square of size 100 x 100
+	this.section_size = 100;
 
 	this.wall_width = 6;
 
@@ -26,7 +26,7 @@ function Maze(){
 	this._traverse(0,0);
 
 	// remove random walls to create possible loops
-	for (let i=0; i<10; i++){
+	for (let i=0; i<this.size*this.size/9; i++){
 		const row = floor(random()*(this.size-2)) + 1;
 		const col = floor(random()*(this.size-2)) + 1;
 		const dir = Object.keys(DIR_LOOKUP)[floor(random()*4)];
@@ -49,14 +49,14 @@ function Maze(){
 	let prev_shapes = {};
 	for (let i=0; i<this.size; i++){
 		for (let j=0; j<this.size; j++){
-			for (let dir in DIR_LOOKUP){
+			for (const dir in DIR_LOOKUP){
 				if (!this.cells[i][j][dir]){
 					continue;
 				}
 				let shapes_in_wall = this._get_wall_shapes(i, j, dir);
-				for (let shape of shapes_in_wall){
+				for (const shape of shapes_in_wall){
 					// if two shapes are the same, use the same one everywhere
-					// should allow === checks between shapes
+					// allows === checks between shapes in the maze
 					if (!prev_shapes.hasOwnProperty(shape.id)){
 						prev_shapes[shape.id] = shape;
 					}
@@ -80,9 +80,10 @@ Maze.prototype._traverse = function (start_row, start_col){
 		const neighbor = this._random_neighbor(pos.row, pos.col);
 
 		if (neighbor===null){
+			// backtrack if there are no unvisited neighbors
 			stack.pop();
 		} else {
-
+			// set neighbor to visited and knock down walls
 			this.cells[neighbor.row][neighbor.col].visited = true;
 
 			this.cells[pos.row][pos.col][neighbor.dir] = false;
@@ -98,7 +99,8 @@ Maze.prototype._traverse = function (start_row, start_col){
 Maze.prototype._random_neighbor = function (row, col){
 	let neighbors = [];
 
-	for (let dir in DIR_LOOKUP){
+	// make list of possible unvisited neighbors
+	for (const dir in DIR_LOOKUP){
 		const d = DIR_LOOKUP[dir];
 		if (row+d.dr>=0 && row+d.dr<this.size && col+d.dc>=0 && col+d.dc<this.size){
 			if (!this.cells[row+d.dr][col+d.dc].visited){
@@ -111,6 +113,7 @@ Maze.prototype._random_neighbor = function (row, col){
 		return null;
 	}
 
+	// return a random neighbor from list of possibilities
 	return neighbors[floor(random()*neighbors.length)];
 
 };
@@ -153,12 +156,14 @@ Maze.prototype.draw = function (){
 	line(0,HEIGHT,WIDTH,HEIGHT);
 };
 
+// get the cell that contains the position (x, y)
 Maze.prototype.get_cell = function (x, y){
 	return {row:floor(y/this.section_size), col:floor(x/this.section_size)};
 }
 
 
-Maze.prototype.get_shapes_in_block = function (min_row, min_col, max_row, max_col){
+// get a list of all possible shapes in a block of cells
+Maze.prototype._get_shapes_in_block = function (min_row, min_col, max_row, max_col){
 	let shapes = [];
 	let prev_shapes = {};
 	for (let i=max(min_row,0); i<=min(max_row,this.size-1); i++){
@@ -172,6 +177,15 @@ Maze.prototype.get_shapes_in_block = function (min_row, min_col, max_row, max_co
 		}
 	}
 	return shapes;
+};
+
+// get an array of all shapes in the maze a rectangle could possibly be touching
+// also works for a circle (using a bounding box)
+Maze.prototype.rect_possible_intersect_shapes = function (rectangle){
+	const min_cell = this.get_cell(rectangle.x - this.wall_width/2, rectangle.y - this.wall_width/2);
+	const max_cell = this.get_cell(rectangle.x + rectangle.width + this.wall_width/2, rectangle.y + rectangle.height + this.wall_width/2);
+
+	return this._get_shapes_in_block(min_cell.row, min_cell.col, max_cell.row, max_cell.col);
 };
 
 // a wall is made up of a rectangle with two circles on the ends
@@ -206,11 +220,15 @@ Maze.prototype._get_wall_shapes = function (row, col, dir){
 		}
 	];
 
-	shapes.map(x=>{x.id = this._get_shape_id(x)});
+	// assign ids to all shapes
+	for (const s of shapes){
+		s.id = this._get_shape_id(s);
+	}
 
 	return shapes;
 };
 
+// generate an id for a given shape
 Maze.prototype._get_shape_id = function (shape){
 	if (shape.type=="rectangle"){
 		return "rectangle " + floor(shape.x) + " " + floor(shape.y) + " " + floor(shape.width) + " " + floor(shape.height);
