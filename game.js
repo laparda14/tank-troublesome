@@ -193,6 +193,7 @@ Game.prototype._handle_maze_player_collisions = function (player){
 	
 };
 
+
 Game.prototype._find_maze_player_collisions = function (player){
 
 	// find the walls that need to be checked for collisions
