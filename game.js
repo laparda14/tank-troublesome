@@ -1,7 +1,3 @@
-// TODO clean up comments
-
-const EPSILON = 0.01;
-
 function Game(){
 	this.maze = new Maze();
 	this.bullets = [];
@@ -82,6 +78,7 @@ Game.prototype.draw = function(){
 /*
 Collision between maze and bullets
 */
+
 
 Game.prototype._handle_maze_bullet_collisions = function (bullet){
 	// repeat a max of five times
@@ -165,68 +162,33 @@ Game.prototype._handle_maze_player_collisions = function (player){
 	// if resolving a collision creates another collision, just hope it doesn't do
 	// it more than five time
 
-	let collisions = this._find_maze_player_collisions(player);
-	if (collisions.length == 0){
-		return;
-	}
-
-	// turning was making it very buggy
-	// if the player turned in the last move, undo it and restart the collision handling
-	if (player._last_turn != null){
-		if (player._last_turn == "left"){
-			player.turn(left=false);
-		} else if (player._last_turn == "right") {
-			player.turn(left=true);
-		}
-		player._last_turn = null;
-		this._handle_maze_player_collisions(player);
-		return;
-	}
-
-	// at this point, we can assume there was only foward and backward motion
-	
-	const furthest_collision = collisions.reduce((a,b)=>a.dist<b.dist?a:b);
-
-	// rewind reality to the point before the collision
-	const dist = furthest_collision.dist;
-	if (player._last_move == "forward"){
-		player.pos.x += dist*cos(player.angle);
-		player.pos.y += dist*sin(player.angle);
-	} else {
-		player.pos.x -= dist*cos(player.angle);
-		player.pos.y -= dist*sin(player.angle);
-	}
-	
-	
-
-
-	// this is how it worked for bullets
-	
-	/*
 	for (let i=0; i<5; i++){
-
 		let collisions = this._find_maze_player_collisions(player);
-		
-		// if there are no collisions, we are done
 		if (collisions.length == 0){
 			return;
 		}
-		
-		// rewind reality to the point before the collision
-		const time = collisions[0].dist / bullet.speed;
-		bullet.update_pos(time);
 
-		if (collisions[0].type == "moving circle - circle"){
-			this._handle_bullet_collision_circle(bullet, collisions[0]);
-		} else {
-			this._handle_bullet_collision_rect(bullet, collisions[0]);
+		let best_collision = {dist:Infinity}
+		for (const c of collisions){
+			// prioritize rectangle collisions over circle collisions
+			if (c.type == "rotated rectangle - circle"){
+				c.dist += 1;
+			}
+
+			if (c.dist<best_collision.dist){
+				best_collision = c;
+			}
 		}
 
-		// move time back forward
-		bullet.update_pos(-time);
-		
+		// for rectangle collisions, only move in the direction normal to the wall
+		if (best_collision.type == "rotated rectangle - rectangle"){
+			best_collision.displacement.x = best_collision.r2_orientation == "horizontal" ? 0 : best_collision.displacement.x;
+			best_collision.displacement.y = best_collision.r2_orientation == "horizontal" ? best_collision.displacement.y : 0;
+		}
+
+		player.pos.x += best_collision.displacement.x;
+		player.pos.y += best_collision.displacement.y;
 	}
-	*/
 	
 	
 };
