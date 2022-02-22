@@ -86,7 +86,6 @@ function draw(){
 		game.update();
 	}
 	game.draw();
-	
 
 }
 

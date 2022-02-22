@@ -19,6 +19,8 @@ function Player(pos, angle, color, input_getter){
 }
 
 Player.prototype.draw = function (){
+	push();
+
 	translate(this.pos.x, this.pos.y);
 	rotate(this.angle);
 	stroke(0);
@@ -27,9 +29,10 @@ Player.prototype.draw = function (){
 	rect(-this.length/2, -this.width/2, this.length, this.width);
 	ellipse(0,0,this.width*3/4,this.width*3/4);
 	rect(0, -this.width/6, this.length/2+this.length*0.1, this.width/3);
-
-	resetMatrix();
-	scale(width/WIDTH);
+	
+	pop();
+	//resetMatrix();
+	//scale(width/WIDTH);
 };
 
 Player.prototype.turn = function (left){
