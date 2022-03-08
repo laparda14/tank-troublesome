@@ -9,15 +9,24 @@
 		* { padding: 0; margin: 0; }
 
 		html, body {
-		    height: 100%;
+			height: 100%;
 		}
 
-		.center {
+		.game {
 			height: 100%;
 			width: 100%;
 			display: flex;
-  			justify-content: center;
-  			align-items: center;
+			justify-content: center;
+			align-items: center;
+		}
+
+		.game-info {
+			background: rgb(230,230,230);
+			height: 80%;
+			width: 200px;
+			padding: 2%;
+			display: flex;
+			justify-content: center;
 		}
 	</style>
 
@@ -35,7 +44,11 @@
 </head>
 <body>
 
-	<div id="sketch" class="center"></div>
+	<div class="game">
+		<div id="left-scoring" class="game-info"></div>
+		<div id="sketch" class="player"></div>
+		<div id="right-scoring" class="game-info"></div>
+	</div>
 
 </body>
 </html>
