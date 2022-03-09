@@ -156,6 +156,11 @@ Maze.prototype.draw = function (){
 	line(0,HEIGHT,WIDTH,HEIGHT);
 };
 
+// get the position of the center of a cell
+Maze.prototype.get_center_pos = function(row, col){
+	return {x: col*this.section_size + this.section_size/2, y: row*this.section_size + this.section_size/2}
+}
+
 // get the cell that contains the position (x, y)
 Maze.prototype.get_cell = function (x, y){
 	return {row:floor(y/this.section_size), col:floor(x/this.section_size)};

@@ -7,6 +7,8 @@ function Bullet(pos, angle, speed, r, life){
 
 	this.r = r;
 	this.life = life;
+
+	this.working = true;
 }
 
 Bullet.prototype.update_pos = function (dt){

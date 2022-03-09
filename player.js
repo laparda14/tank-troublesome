@@ -1,4 +1,6 @@
-function Player(pos, angle, color, input_getter){
+function Player(id, pos, angle, color, input_getter){
+	this.id = id;
+
 	this.pos = pos; // center
 	this.angle = angle;
 
@@ -40,8 +42,6 @@ Player.prototype.draw = function (){
 	rect(0, -this.width/6, this.length/2+this.length*0.1, this.width/3);
 	
 	pop();
-	//resetMatrix();
-	//scale(width/WIDTH);
 };
 
 Player.prototype.turn = function (left){

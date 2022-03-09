@@ -3,12 +3,23 @@ function Game(){
 	this.bullets = [];
 	this.players = [];
 
-	this._finishing = false;
-	this._updates_to_finish = 60;
+	// ending the game
+	this._updates_to_finish = 120;
 	this.finished = false;
+
+	// putting players in different cells
+	this._cells_taken = {};
 }
 
 Game.prototype.update = function(){
+	if (this._updates_to_finish < -60){
+		this.finished = true;
+		return;
+	} else if (this._updates_to_finish < 0){
+		this._updates_to_finish --;
+		return;
+	}
+
 	// player bullet collisions
 	this._generate_cell_bullets_map();
 	for (const p of this.players){
@@ -20,6 +31,9 @@ Game.prototype.update = function(){
 	}
 
 	// start ending game if only one player is still alive
+	if (this.players.filter(p=>p.alive).length < 2){
+		this._updates_to_finish --;
+	}
 
 
 	// move players, shoot bullets
@@ -57,15 +71,41 @@ Game.prototype.draw = function(){
 	// draw the maze
 	this.maze.draw();
 	
+	// draw the bullets
+	for (const b of this.bullets){
+		b.draw();
+	}
+
 	// draw the players
 	for (const p of this.players){
 		p.draw();
 	}
 
-	// draw the bullets
-	for (const b of this.bullets){
-		b.draw();
+};
+
+Game.prototype.create_player = function (id, color, input_getter){
+	let row = floor(random()*this.maze.size);
+	let col = floor(random()*this.maze.size);
+	while (this._cells_taken.hasOwnProperty(row + " " + col)){
+		row = floor(random()*this.maze.size);
+		col = floor(random()*this.maze.size);
 	}
+	this._cells_taken[row + " " + col] = 0;
+	this.players.push(
+		new Player(id, game.maze.get_center_pos(row, col), PI/2*floor(random()*4), color, input_getter)
+	);
+};
+
+// to be used once the game is finished
+// returns id of winning player
+// if all players are dead, return null
+Game.prototype.get_winner = function (){
+	for (const p of this.players){
+		if (p.alive){
+			return p.id;
+		}
+	}
+	return null;
 };
 
 
@@ -231,6 +271,7 @@ Game.prototype._handle_player_bullets_collisions = function (player){
 			player.alive = false;
 			this.bullets[shape.bullet_index].life = player._max_frames_to_hidden;
 			this.bullets[shape.bullet_index].speed = 0;
+			this.bullets[shape.bullet_index].working = false;
 			return;
 		}
 	}
@@ -241,6 +282,11 @@ Game.prototype._generate_cell_bullets_map = function () {
 	this._cell_bullets_map = new Array(this.maze.size).fill(new Array(this.maze.size).fill([]));
 	for (let k=0; k<this.bullets.length; k++){
 		const bullet = this.bullets[k];
+
+		if (!bullet.working){
+			continue;
+		}
+
 		const bullet_shape = {bullet_index: k, x: bullet.pos.x, y: bullet.pos.y, r: bullet.r, type: "circle"};
 		bullet_shape.id = this.maze._get_shape_id(bullet_shape);
 
@@ -288,4 +334,4 @@ Game.prototype._get_possible_bullet_shapes = function (player){
 	}
 
 	return shapes_to_check;
-}
+};
