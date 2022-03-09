@@ -1,4 +1,6 @@
-function Player(pos, angle, color, input_getter){
+function Player(id, pos, angle, color, input_getter){
+	this.id = id;
+
 	this.pos = pos; // center
 	this.angle = angle;
 
@@ -13,6 +15,10 @@ function Player(pos, angle, color, input_getter){
 
 	this.input_getter = input_getter;
 
+	this.alive = true;
+	this._max_frames_to_hidden = 10;
+	this._frames_to_hidden = this._max_frames_to_hidden;
+
 	this._already_shot = false;
 	this._last_move = null;
 	this._last_turn = null;
@@ -23,16 +29,19 @@ Player.prototype.draw = function (){
 
 	translate(this.pos.x, this.pos.y);
 	rotate(this.angle);
-	stroke(0);
 	strokeWeight(1);
-	fill(this.color);
+
+	let alpha = this.color.levels[3];
+	if (!this.alive){
+		alpha *= this._frames_to_hidden/20;
+	}
+	fill(this.color.levels[0], this.color.levels[1], this.color.levels[2], alpha);
+	stroke(0, alpha);
 	rect(-this.length/2, -this.width/2, this.length, this.width);
 	ellipse(0,0,this.width*3/4,this.width*3/4);
 	rect(0, -this.width/6, this.length/2+this.length*0.1, this.width/3);
 	
 	pop();
-	//resetMatrix();
-	//scale(width/WIDTH);
 };
 
 Player.prototype.turn = function (left){

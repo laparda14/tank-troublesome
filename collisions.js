@@ -299,7 +299,6 @@ function rot_rectangle_circle_collision(r, c){
 
 // r1 = {center_x:<center x>, center_y:<center y>, length:<length>, width:<width>, angle:<angle of rotation>};
 // r2 = {x:<top-left x>, y:<top-left y>, width:<width>, height:<height>};
-// dir = {x:<x component>, y:<y component>}; <-- normalized
 function rot_rectangle_rectangle_collision(r1, r2){
 	const col = {};
 	col.type = "rotated rectangle - rectangle";
@@ -350,6 +349,36 @@ function rot_rectangle_rectangle_collision(r1, r2){
 	col.collision = true;
 	col.displacement = {x:best_collision.dist*best_axis.x, y:best_collision.dist*best_axis.y};
 	col.dist = -abs(best_collision.dist);
+
+	return col;
+}
+
+
+// only check if a rotated rectangle and a circle are colliding
+
+// r = {center_x:<center x>, center_y:<center y>, length:<length>, width:<width>, angle: <angle of rotation>};
+// c = {x:<center x>, y:<center y>, r:<radius>};
+function check_rot_rectangle_circle_collision(r, c){
+	const col = {};
+	col.type = "rotated rectangle - circle";
+
+	// transform shapes so the rectangle is not rotated
+	const rel_c_x = c.x - r.center_x;
+	const rel_c_y = c.y - r.center_y;
+
+	const transformed_c_x = cos(r.angle)*rel_c_x + sin(r.angle)*rel_c_y;
+	const transformed_c_y = -sin(r.angle)*rel_c_x + cos(r.angle)*rel_c_y;
+
+	// quick check to avoid SAT if there is no intersection
+	const x_center_dist = abs(transformed_c_x);
+	const y_center_dist = abs(transformed_c_y);
+	if (x_center_dist + EPSILON >= c.r + r.length/2 || y_center_dist + EPSILON >= c.r + r.width/2){
+		col.collision = false;
+	}  else if (x_center_dist + EPSILON < r.length/2 || y_center_dist + EPSILON < r.width/2) {
+		col.collision = true;
+	} else {
+		col.collision = (x_center_dist-r.length/2)*(x_center_dist-r.length/2) + (y_center_dist-r.width/2)*(y_center_dist-r.width/2) + EPSILON < c.r*c.r;
+	}
 
 	return col;
 }
