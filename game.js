@@ -36,20 +36,14 @@ Game.prototype.update = function(){
 	}
 
 
-	// move players, shoot bullets
+	// move players, player wall collisions, shoot bullets
 	for (const p of this.players){
 		if (p.alive){
 			const shoot = p.handle_input();
+			this._handle_player_maze_collisions(p);
 			if (shoot){
 				this.bullets.push(p.create_bullet());
 			}
-		}
-	}
-
-	// player wall collisions
-	for (const p of this.players){
-		if (p.alive){
-			this._handle_player_maze_collisions(p);
 		}
 	}
 
