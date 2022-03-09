@@ -24,9 +24,19 @@
 		.game-info {
 			height: 80%;
 			width: 200px;
-			padding: 2%;
 			display: flex;
 			justify-content: center;
+		}
+
+		#settings {
+			width:30px;
+			height:30px;
+			padding: 2px;
+		}
+
+		#settings:hover {
+			border: 2px solid black;
+			background: rgb(180,180,180);
 		}
 	</style>
 
@@ -47,7 +57,11 @@
 	<div class="game">
 		<div id="left-scoring" class="game-info"></div>
 		<div id="sketch" class="player"></div>
-		<div id="right-scoring" class="game-info"></div>
+		<div id="right-scoring" class="game-info">
+			<div style="position: relative; top: -5%; left: -75px">
+				<input id="settings" type="image" src="images/settings-icon.png">
+			</div>
+		</div>
 	</div>
 
 </body>

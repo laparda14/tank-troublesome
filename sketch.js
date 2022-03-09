@@ -19,15 +19,16 @@ function reset_game(){
 }
 
 function setup(){
-	canvas = createCanvas(windowHeight*0.9,windowHeight*0.9);
+	const canvas_size = floor(min(windowHeight*0.9,windowWidth*0.9 - 300));
+	canvas = createCanvas(canvas_size, canvas_size);
 	canvas.parent("sketch");
 
 	green_scoring = createDiv("0");
-	green_scoring.style("background:#00EE00; position: relative; top: 60%; width: 100px; height: 100px; display:flex; align-items:center; justify-content:center; font-size: 40px");
+	green_scoring.style("background:#00EE00; position: absolute; top: 60%; width: 100px; height: 100px; display:flex; align-items:center; justify-content:center; font-size: 40px");
 	green_scoring.parent("right-scoring");
 
 	red_scoring = createDiv("0");
-	red_scoring.style("background:#EE0000; position: relative; top: 60%; width: 100px; height: 100px; display:flex; align-items:center; justify-content:center; font-size: 40px");
+	red_scoring.style("background:#EE0000; position: absolute; top: 60%; width: 100px; height: 100px; display:flex; align-items:center; justify-content:center; font-size: 40px");
 	red_scoring.parent("left-scoring");
 
 
@@ -61,10 +62,6 @@ function draw(){
 		const winner = game.get_winner();
 		if (winner != null){
 			players_info[winner].score ++;
-		} else {
-			for (const id in players_info){
-				players_info[id].score ++;
-			}
 		}
 		reset_game();
 	}
@@ -72,9 +69,8 @@ function draw(){
 
 }
 
-// can't be held
-function keyPressed(){
-	if (key == "c"){
-		game.bullets = [];
-	}
+function windowResized(){
+	const canvas_size = floor(min(windowHeight*0.9,windowWidth*0.9 - 300));
+	resizeCanvas(canvas_size, canvas_size);
+	canvas.style("border", floor(game.maze.wall_width/2*width/WIDTH) + "px solid black");
 }
