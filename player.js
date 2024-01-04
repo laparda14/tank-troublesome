@@ -4,8 +4,8 @@ function Player(id, pos, angle, color, input_getter){
 	this.pos = pos; // center
 	this.angle = angle;
 
-	this.length = 15;
-	this.width = 5;
+	this.length = 56;
+	this.width = 45;
 
 	this.turn_speed = 0.1;
 	this.forward_speed = 5;
@@ -66,7 +66,7 @@ Player.prototype.move = function (forward){
 	}
 };
 
-Player.prototype.create_bullet = function (speed=8, r=6, life=900000000){
+Player.prototype.create_bullet = function (speed=20, r=6, life=900000000){
 	const dist = this.length/2 + r;
 	const pos = {x:this.pos.x + cos(this.angle)*dist, y:this.pos.y + sin(this.angle)*dist};
 
