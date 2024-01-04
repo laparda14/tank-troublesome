@@ -8,8 +8,8 @@ function Player(id, pos, angle, color, input_getter){
 	this.width = 42;
 
 	this.turn_speed = 0.07;
-	this.forward_speed = 3;
-	this.back_speed = 3;
+	this.forward_speed = 5;
+	this.back_speed = 5;
 
 	this.color = color;
 
