@@ -66,7 +66,7 @@ Player.prototype.move = function (forward){
 	}
 };
 
-Player.prototype.create_bullet = function (speed=5, r=6, life=900){
+Player.prototype.create_bullet = function (speed=5, r=60, life=900){
 	const dist = this.length/2 + r;
 	const pos = {x:this.pos.x + cos(this.angle)*dist, y:this.pos.y + sin(this.angle)*dist};
 
