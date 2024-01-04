@@ -7,9 +7,9 @@ function Player(id, pos, angle, color, input_getter){
 	this.length = 56;
 	this.width = 42;
 
-	this.turn_speed = 0.07;
-	this.forward_speed = 5;
-	this.back_speed = 5;
+	this.turn_speed = 0.13;
+	this.forward_speed = 7;
+	this.back_speed = 7;
 
 	this.color = color;
 
