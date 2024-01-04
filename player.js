@@ -9,7 +9,7 @@ function Player(id, pos, angle, color, input_getter){
 
 	this.turn_speed = 0.07;
 	this.forward_speed = 3;
-	this.back_speed = 2;
+	this.back_speed = 3;
 
 	this.color = color;
 
@@ -95,7 +95,7 @@ Player.prototype.handle_input = function() {
 
 	if (input.shoot){
 		if (!this._already_shot){
-			this._already_shot = true;
+			this._already_shot = false;
 			return true;
 		}
 	} else {
