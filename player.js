@@ -4,8 +4,8 @@ function Player(id, pos, angle, color, input_getter){
 	this.pos = pos; // center
 	this.angle = angle;
 
-	this.length = 56;
-	this.width = 45;
+	this.length = 25;
+	this.width = 20;
 
 	this.turn_speed = 0.1;
 	this.forward_speed = 5;
