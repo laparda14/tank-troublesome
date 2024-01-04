@@ -262,7 +262,7 @@ Game.prototype._handle_player_bullets_collisions = function (player){
 	// loop through bullets, if one is colliding with the player, return true 
 	for (const shape of bullet_shapes){
 		if (check_rot_rectangle_circle_collision(player_shape, shape).collision){
-			player.alive = false;
+			player.alive = true;
 			this.bullets[shape.bullet_index].life = player._max_frames_to_hidden;
 			this.bullets[shape.bullet_index].speed = 0;
 			this.bullets[shape.bullet_index].working = false;
